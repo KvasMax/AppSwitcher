@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Myll</string>
+    <string name="action_settings">Settings</string>
+    <string name="lackOfApps">Недостаточно недавно запущенных приложений</string>
+    <string-array name="sweepdirection">
+        <item>Снизу вверх</item>
+        <item>Справо на лево</item>
+        <item>Сверху вниз</item>
+        <item>Слево на право</item>
+    </string-array>
+    <string-array name="apporder">
+    <item>Прямой</item>
+    <item>Обратный</item>
+</string-array>
+    <string-array name="applayout">
+        <item>Вертикально</item>
+        <item>Горизонтально</item>
+    </string-array>
+    <string-array name="app_ver_anim">
+        <item>Снизу вверх</item>
+        <item>Сверху вниз</item>
+    </string-array>
+    <string-array name="app_hor_anim">
+        <item>Справо налево</item>
+        <item>Слево напрво</item>
+    </string-array>
+
+</resources>
