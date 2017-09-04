@@ -2,16 +2,22 @@ package com.example.erros.myll;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +30,9 @@ import android.widget.Spinner;
 import android.widget.Switch;
 
 public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
+
+    final static int PERMISSION_REQUEST_CODE = 102;
+    final static int USAGE_ACCESS_PERMISSION_REQUEST_CODE = 101;
 
     private AppResultsReceiver mReceiver;
     private SharedPreferences mSettings;
@@ -44,22 +53,13 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     SeekBar yAppsChange;
     SeekBar AppCount;
 
-    LinearLayout ll;
+    public LinearLayout ll;
 
     int defaultCoor=10;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getActivity()))
-        {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getActivity().getPackageName()));
-            startActivityForResult(intent, 1);
-        }
-
-        startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
 
     }
 
@@ -207,10 +207,16 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         OnOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
                 if (isChecked)
-                    getActivity().startService(new Intent(getActivity(), FloatingSwitcher.class));
+                    if(checkPermissions()) {
+                        getActivity().startService(new Intent(getActivity(), FloatingSwitcher.class));
+                    } else {
+                        isChecked = false;
+                        buttonView.setChecked(isChecked);
+                    }
                 else
-                    sendParam(FloatingSwitcher.ACTION_FINISH,666);
+                    sendParam(FloatingSwitcher.ACTION_FINISH, 666);
                 onoff=isChecked;
             }
         });
@@ -304,6 +310,129 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         ArrayAdapter<CharSequence> adapter= ArrayAdapter.createFromResource(getContext(), resId, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         return adapter;
+    }
+    private boolean permissionIsGranted(String permission)
+    {
+        if(permission.equals(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        {
+            boolean granted = false;
+            AppOpsManager appOps = (AppOpsManager) getActivity()
+                    .getSystemService(Context.APP_OPS_SERVICE);
+            int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(), getActivity().getPackageName());
+
+            if (mode == AppOpsManager.MODE_DEFAULT) {
+                granted = (getActivity().checkCallingOrSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED);
+            } else {
+                granted = (mode == AppOpsManager.MODE_ALLOWED);
+            }
+            return granted;
+        }
+        return ContextCompat.checkSelfPermission(getActivity(), permission) == PackageManager.PERMISSION_GRANTED
+                || getActivity().checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+    }
+    private void sendPermissionRequest(String permission, boolean newMethod, int requestCode) {
+
+        if (newMethod){
+            requestPermissions(new String[]{permission}, requestCode);
+        } else {
+            Intent intent = new Intent(permission); // Settings.ACTION_USAGE_ACCESS_SETTINGS
+            startActivityForResult(intent, requestCode);
+        }
+
+    }
+    private boolean checkPermissions(/*Runnable func*/) {
+/*
+
+        startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+
+        if(permissionIsGranted(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+        {
+            func.run();
+        } else {
+
+        }*/
+        boolean granted = true;
+        if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        {
+            requestPermission(Settings.ACTION_USAGE_ACCESS_SETTINGS, false, getActivity().getResources().getString(R.string.usage_access_permission), USAGE_ACCESS_PERMISSION_REQUEST_CODE);
+            granted = false;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getActivity()))
+        {
+            requestPermission(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, false, getActivity().getResources().getString(R.string.overlay_permission), PERMISSION_REQUEST_CODE);
+            granted = false;
+        }
+        return granted;
+
+    }
+
+    private void requestPermission(final String permission, final boolean newMethod, final String message, final int requestCode)
+    {
+        if(permissionIsGranted(permission))
+            return;
+
+        if(newMethod) {
+            if (shouldShowRequestPermissionRationale(
+                    permission))
+            {
+                //final String message = "Usage access permission is needed to get a list of running apps";
+                Snackbar.make(ll, message, Snackbar.LENGTH_LONG)
+                        .setAction("GRANT", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                sendPermissionRequest(permission, newMethod, requestCode);
+                            }
+                        })
+                        .show();
+
+            } else {
+
+                sendPermissionRequest(permission, newMethod, requestCode);
+            }
+        } else {
+                // = "Usage access permission is needed to get a list of running apps";
+                Snackbar.make(ll, message, Snackbar.LENGTH_LONG)
+                        .setAction("GRANT", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                sendPermissionRequest(permission, newMethod, requestCode);
+                            }
+                        })
+                        .show();
+            }
+
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        checkPermissions();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+/*        if(requestCode == USAGE_ACCESS_PERMISSION_REQUEST_CODE)
+        {
+            if(!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            {
+                checkPermissions();
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getActivity()))
+                {
+                  // Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getActivity().getPackageName()));
+                 //   startActivityForResult(intent, PERMISSION_REQUEST_CODE);
+
+                    checkPermissions();
+                }
+            }
+        }*/
+        checkPermissions();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }
 

@@ -2,15 +2,21 @@ package com.example.erros.myll;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -19,7 +25,8 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends AppCompatActivity {
+
 
 
     /**
@@ -32,14 +39,13 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        FragmentManager fg=getSupportFragmentManager();
-        Fragment frag=fg.findFragmentById(R.id.framecon);
+        FragmentManager fg = getSupportFragmentManager();
+        fragcon frag=(fragcon)fg.findFragmentById(R.id.framecon);
         if(frag==null){
             frag=new fragcon();
             frag.setRetainInstance(true);
             fg.beginTransaction().add(R.id.framecon, frag).commit();
         }
-
 
        /* but.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -51,8 +57,10 @@ public class MainActivity extends FragmentActivity {
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
+
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

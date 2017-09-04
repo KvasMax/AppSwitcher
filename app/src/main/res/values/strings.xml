@@ -24,5 +24,7 @@
         <item>Справо налево</item>
         <item>Слево напрво</item>
     </string-array>
+    <string name="usage_access_permission">Usage access permission is needed to get a list of running apps</string>
+    <string name="overlay_permission">Overlay permission is needed to draw a floating button</string>
 
 </resources>
