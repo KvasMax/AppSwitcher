@@ -1,17 +1,14 @@
 package com.example.erros.myll;
 
-import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -52,6 +49,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     SeekBar xAppSChange;
     SeekBar yAppsChange;
     SeekBar AppCount;
+    SeekBar AppIconSize;
 
     public LinearLayout ll;
 
@@ -82,6 +80,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         xAppSChange=(SeekBar)v.findViewById(R.id.xAppPanel);
         yAppsChange=(SeekBar)v.findViewById(R.id.yAppPanel);
         AppCount=(SeekBar) v.findViewById(R.id.AppCount);
+        AppIconSize=(SeekBar) v.findViewById(R.id.AppIconSize);
         ll=(LinearLayout)v.findViewById(R.id.properties);
 
         SeekBar.OnSeekBarChangeListener seeklistener =new SeekBar.OnSeekBarChangeListener() {
@@ -89,16 +88,16 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 switch(seekBar.getId()) {
                     case R.id.xpanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_X,progress);
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_X,progress);
                         break;
                     case R.id.ypanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_Y, progress);
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_Y, progress);
                         break;
                     case R.id.widthpanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_WiDTH, progress);
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_WiDTH, progress);
                         break;
                     case R.id.heightpanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_HEIGHT, progress);
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_HEIGHT, progress);
                         break;
                     case R.id.xAppPanel:
                         sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_X, progress);
@@ -107,7 +106,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                         sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_Y, progress);
                         break;
                     case    R.id.AppCount:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_APP_COUNT, progress);
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_COUNT, progress);
+                        break;
+                    case    R.id.AppIconSize:
+                        sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ICON_SIZE, progress);
                         break;
                 }
             }
@@ -129,6 +131,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         xAppSChange.setOnSeekBarChangeListener(seeklistener);
         yAppsChange.setOnSeekBarChangeListener(seeklistener);
         AppCount.setOnSeekBarChangeListener(seeklistener);
+        AppIconSize.setOnSeekBarChangeListener(seeklistener);
 
         SweepDirect=(Spinner)v.findViewById(R.id.SweepDirection);
         appOrder =(Spinner)v.findViewById(R.id.AppOrder);
@@ -141,7 +144,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         SweepDirect.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                sendParam(FloatingSwitcher.ACTION_CHANGE_SWEEPDIRECTION, position);
+                sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_SWEEPDIRECTION, position);
             }
 
         @Override
@@ -156,7 +159,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         appOrder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                sendParam(FloatingSwitcher.ACTION_CHANGE_APP_ORDER, position);
+                sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ORDER, position);
             }
 
             @Override
@@ -171,7 +174,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         appLayout.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                sendParam(FloatingSwitcher.ACTION_CHANGE_APP_LAYOUT, position);
+                sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_LAYOUT, position);
                 switch (position)
                 {
                     case FloatingSwitcher.VERTICAL:
@@ -193,7 +196,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         appAnim.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                sendParam(FloatingSwitcher.ACTION_CHANGE_APP_ANIM, position);
+                sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ANIM, position);
             }
 
             @Override
@@ -215,8 +218,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                         isChecked = false;
                         buttonView.setChecked(isChecked);
                     }
-                else
+                else {
+                    saveSettings();
                     sendParam(FloatingSwitcher.ACTION_FINISH, 666);
+                }
                 onoff=isChecked;
             }
         });
@@ -230,7 +235,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         mReceiver = new AppResultsReceiver(new Handler());
         mReceiver.setReceiver(this);
         loadSettings();
-        sendParam(FloatingSwitcher.ACTION_INI, xchange.getMax());
+        if(isMyServiceRunning(FloatingSwitcher.class)) {
+            sendParam(FloatingSwitcher.ACTION_INI, xchange.getMax());
+            sendParam(FloatingSwitcher.ACTION_APPS_VISIBILITY, 0);
+        }
         //((ArrayAdapter<UsageStats>)getListAdapter()).notifyDataSetChanged();
 
     }
@@ -240,6 +248,9 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         super.onPause();
         mReceiver.setReceiver(null);
         saveSettings();
+        if(isMyServiceRunning(FloatingSwitcher.class)) {
+            sendParam(FloatingSwitcher.ACTION_APPS_VISIBILITY, 1);
+        }
     }
 
 
@@ -257,6 +268,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         xAppSChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_X, defaultCoor));
         yAppsChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_Y, defaultCoor));
         AppCount.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_COUNT, defaultCoor));
+        AppIconSize.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ICON_SIZE, defaultCoor));
         SweepDirect.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_SWEEP_DIRECTION, 0));
         appOrder.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ORDER, 0));
         appLayout.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_LAYOUT, 0));
@@ -281,6 +293,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_X, xAppSChange.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_Y, yAppsChange.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_COUNT, AppCount.getProgress());
+        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ICON_SIZE, AppIconSize.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());

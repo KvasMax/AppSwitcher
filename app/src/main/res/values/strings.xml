@@ -17,12 +17,12 @@
         <item>Горизонтально</item>
     </string-array>
     <string-array name="app_ver_anim">
-        <item>Снизу вверх</item>
-        <item>Сверху вниз</item>
-    </string-array>
-    <string-array name="app_hor_anim">
         <item>Справо налево</item>
         <item>Слево напрво</item>
+    </string-array>
+    <string-array name="app_hor_anim">
+        <item>Снизу вверх</item>
+        <item>Сверху вниз</item>
     </string-array>
     <string name="usage_access_permission">Usage access permission is needed to get a list of running apps</string>
     <string name="overlay_permission">Overlay permission is needed to draw a floating button</string>

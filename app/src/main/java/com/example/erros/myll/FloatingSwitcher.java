@@ -5,16 +5,19 @@ package com.example.erros.myll;
  */
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -43,7 +46,7 @@ public class FloatingSwitcher extends Service {
     ActivityManager am;
 
     ImageView touchpanel;
-    List<UsageStats> stats;
+
     ArrayList<ImageView> apps;
     LinearLayout appsContainer;
 
@@ -62,7 +65,7 @@ public class FloatingSwitcher extends Service {
     int butX=0;
     int butY=0;
     int pointCount;
-    int defaultInc=10;
+    int defaultInc=20;
     int incX;
     int incY;
     int incWidth=defaultInc;
@@ -72,22 +75,26 @@ public class FloatingSwitcher extends Service {
     boolean apporder=true;
     int applayout=0;
     int appanim=0;
+
+    boolean activityIsVisible = true;
     //Constantsinc
     public  static final String ACTION_INI ="change your behaviour, fucking asshole";
     public  static final String ACTION_FINISH ="finish yourself, dickhead";
 
-    public  static final String ACTION_CHANGE_X ="change x, fucking asshole";
-    public  static final String ACTION_CHANGE_Y ="change y, fucking asshole";
-    public  static final String ACTION_CHANGE_WiDTH ="change width, fucking asshole";
-    public  static final String ACTION_CHANGE_HEIGHT ="change height, fucking asshole";
+    public  static final String ACTION_CHANGE_BUTTON_X ="change x, fucking asshole";
+    public  static final String ACTION_CHANGE_BUTTON_Y ="change y, fucking asshole";
+    public  static final String ACTION_CHANGE_BUTTON_WiDTH ="change width, fucking asshole";
+    public  static final String ACTION_CHANGE_BUTTON_HEIGHT ="change height, fucking asshole";
+    public  static final String ACTION_CHANGE_BUTTON_SWEEPDIRECTION="sweep sweep";
 
-    public  static final String ACTION_CHANGE_SWEEPDIRECTION="sweep sweep";
+    public  static final String ACTION_APPS_VISIBILITY="ACTION_APPS_VISIBILITY";
     public  static final String ACTION_CHANGE_APPS_X="appps xx xx";
     public  static final String ACTION_CHANGE_APPS_Y="apppsyyy y y yyy";
-    public  static final String ACTION_CHANGE_APP_COUNT="apppsyyy y y yyy count";
-    public  static final String ACTION_CHANGE_APP_ORDER="ACTION_CHANGE_APP_ORDER";
-    public  static final String ACTION_CHANGE_APP_LAYOUT="ACTION_CHANGE_APP_LAYOUT";
-    public  static final String ACTION_CHANGE_APP_ANIM="ACTION_CHANGE_APP_ANIM";
+    public  static final String ACTION_CHANGE_APPS_COUNT ="apppsyyy y y yyy count";
+    public  static final String ACTION_CHANGE_APPS_ICON_SIZE ="icon size";
+    public  static final String ACTION_CHANGE_APPS_ORDER ="ACTION_CHANGE_APPS_ORDER";
+    public  static final String ACTION_CHANGE_APPS_LAYOUT ="ACTION_CHANGE_APPS_LAYOUT";
+    public  static final String ACTION_CHANGE_APPS_ANIM ="ACTION_CHANGE_APPS_ANIM";
 
     public  static final String PARAM="this is my new property, fucking switcher";
     public  static final String RECEIVER = "paramparampam";
@@ -101,6 +108,7 @@ public class FloatingSwitcher extends Service {
     public static final String APP_PREFERENCES_SWEEP_DIRECTION="sweepppdirectionsweep";
 
     public static final String APP_PREFERENCES_APP_COUNT="APP_PREFERENCES_APP_COUNT";
+    public static final String APP_PREFERENCES_APP_ICON_SIZE="APP_PREFERENCES_APP_ICON_SIZE";
     public static final String APP_PREFERENCES_APP_ORDER="APP_PREFERENCES_APP_ORDER";
     public static final String APP_PREFERENCES_APP_LAYOUT="APP_PREFERENCES_APP_LAYOUT";
     public static final String APP_PREFERENCES_APP_ANIM="APP_PREFERENCES_APP_ANIM";
@@ -118,7 +126,10 @@ public class FloatingSwitcher extends Service {
     public static final int VERTICAL=0;
     public static final int HORIZONTAL=1;
 
-    int picSize=100;
+    int iconSize;
+    int iconSizeInc;
+    int iconCurPos;
+    int iconSizeMin;
 
     public void onCreate() {
         super.onCreate();
@@ -126,7 +137,7 @@ public class FloatingSwitcher extends Service {
         am=(ActivityManager)getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
         //PackageManager pm=getApplication().getPackageManager();
         windowManager = (WindowManager)getSystemService(WINDOW_SERVICE);
-       // swi=new SwitcherContainer(pm,getPackageName(), maxcount);
+       // swi=new SwitcherContainer(pm,getPackageName(), maxCount);
         DaggerSwitcherComponent.builder().switcherModule(new SwitcherModule(getApplication())).build().inject(this);
         size = new Point();
         windowManager.getDefaultDisplay().getSize(size);
@@ -143,42 +154,66 @@ public class FloatingSwitcher extends Service {
                 getIncs();
             }
             else if (intent.getAction().equals(ACTION_FINISH)) {
+                Log.d("fuck", butWidth + " "+ butHeight + " " + butY + " " + butX);
                 windowManager.removeView(appsContainer);
                 windowManager.removeView(touchpanel);
                 stopSelf();
-            } else if (intent.getAction().equals(ACTION_CHANGE_X)) {
-                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_X);
+            } else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_X)) {
+                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_X);
+                butX = butParams.x;
             }
-            else if (intent.getAction().equals(ACTION_CHANGE_Y)) {
-                PropertyChanger(butParams,intent.getIntExtra(PARAM, defaultInc),ACTION_CHANGE_Y);
+            else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_Y)) {
+                PropertyChanger(butParams,intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_Y);
+                butY = butParams.y;
             }
-            else if( intent.getAction().contains(ACTION_CHANGE_WiDTH))
+            else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_WiDTH))
             {
-                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_WiDTH);
-            }else if( intent.getAction().contains(ACTION_CHANGE_HEIGHT))
+                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_WiDTH);
+                butWidth = butParams.width;
+            }else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_HEIGHT))
             {
-                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_HEIGHT);
+                PropertyChanger(butParams, intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_HEIGHT);
+                butHeight = butParams.height;
             }
-            else if(intent.getAction().equals(ACTION_CHANGE_SWEEPDIRECTION))
+            else if(intent.getAction().equals(ACTION_CHANGE_BUTTON_SWEEPDIRECTION))
             {
                 sweepDirection=intent.getIntExtra(PARAM, BottomTop);
             }
             else if(intent.getAction().equals(ACTION_CHANGE_APPS_X))
             {
-                PropertyChanger(appsParams,intent.getIntExtra(PARAM, defaultInc),ACTION_CHANGE_X);
+                PropertyChanger(appsParams,intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_X);
+                appX = appsParams.x;
             }
             else if(intent.getAction().equals(ACTION_CHANGE_APPS_Y))
             {
-                PropertyChanger(appsParams,intent.getIntExtra(PARAM, defaultInc),ACTION_CHANGE_Y);
-            }else if(intent.getAction().equals(ACTION_CHANGE_APP_COUNT))
+                PropertyChanger(appsParams,intent.getIntExtra(PARAM, defaultInc), ACTION_CHANGE_BUTTON_Y);
+                appY = appsParams.y;
+            }else if(intent.getAction().equals(ACTION_CHANGE_APPS_COUNT))
             {
                 maxcount=intent.getIntExtra(PARAM, defaultInc)+1;
-                initialiseAppPanel(true);
-            }else if(intent.getAction().equals(ACTION_CHANGE_APP_ORDER))
+                initialiseAppPanel(false);
+            }else if(intent.getAction().equals(ACTION_CHANGE_APPS_ICON_SIZE))
+            {
+                iconCurPos = intent.getIntExtra(PARAM, 0);
+                iconSize = iconSizeMin + iconSizeInc * iconCurPos;
+                initialiseAppPanel(false);
+            }else if(intent.getAction().equals(ACTION_CHANGE_APPS_ORDER))
             {
                 apporder =intent.getIntExtra(PARAM, 0)==0;
 
-            }else if(intent.getAction().equals(ACTION_CHANGE_APP_LAYOUT))
+            }else if(intent.getAction().equals(ACTION_APPS_VISIBILITY))
+            {
+                activityIsVisible = intent.getIntExtra(PARAM, 0) == 0;
+                if(activityIsVisible) {
+                    appsContainer.setVisibility(View.VISIBLE);
+                    appsContainer.setBackgroundColor(Color.BLUE);
+                }
+                else {
+                    appsContainer.setVisibility(View.GONE);
+                    appsContainer.setBackgroundColor(Color.TRANSPARENT);
+                }
+
+            }else if(intent.getAction().equals(ACTION_CHANGE_APPS_LAYOUT))
             {
                 applayout =intent.getIntExtra(PARAM, 0);
                /* windowManager.removeView(appsContainer);
@@ -188,15 +223,15 @@ public class FloatingSwitcher extends Service {
                 {
                     case VERTICAL:
                         appsContainer.setOrientation(LinearLayout.VERTICAL);
-                        appsParams.width=picSize;
-                        appsParams.height=picSize*maxcount;
-                        PropertyChanger(appsParams,0,ACTION_CHANGE_Y);
+                        appsParams.width= iconSize;
+                        appsParams.height= iconSize * maxcount;
+                        PropertyChanger(appsParams,0, ACTION_CHANGE_BUTTON_Y);
                         break;
                     case HORIZONTAL:
                         appsContainer.setOrientation(LinearLayout.HORIZONTAL);
-                        appsParams.width=picSize*maxcount;
-                        appsParams.height=picSize;
-                        PropertyChanger(appsParams,0,ACTION_CHANGE_X);
+                        appsParams.width= iconSize *maxcount;
+                        appsParams.height= iconSize;
+                        PropertyChanger(appsParams,0, ACTION_CHANGE_BUTTON_X);
                         break;
                 }
                /* for(ImageView im: apps) {
@@ -204,7 +239,12 @@ public class FloatingSwitcher extends Service {
                 }*/
                // windowManager.removeView(appsContainer);
                // windowManager.addView(appsContainer, appsParams);
+            } else if(intent.getAction().equals(ACTION_CHANGE_APPS_ANIM))
+            {
+                int animation = intent.getIntExtra(PARAM, 0);
+                setAnim(applayout, animation);
             }
+
             windowManager.updateViewLayout(touchpanel, butParams);
             windowManager.updateViewLayout(appsContainer, appsParams);
         }
@@ -214,12 +254,23 @@ public class FloatingSwitcher extends Service {
         long currentTime = System.currentTimeMillis();
         // get usage stats for the last 10 seconds
         int minutes=5;
-        stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * minutes, currentTime);
+        List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * minutes, currentTime);
         if(stats.size()<maxcount){
             minutes=1440;
             stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * minutes, currentTime);
         }
-        swi.update(stats);
+        List<UsageStats> usStats = new ArrayList<>();
+        for(UsageStats newStat : stats)
+        {
+            boolean found = false;
+            for(UsageStats stat : usStats)
+            {
+                if(stat.getPackageName().equals(newStat.getPackageName()))
+                    found = true;
+            }
+            if(!found) usStats.add(newStat);
+        }
+        swi.update(usStats);
         int i= apporder ? apps.size()-1 : 0;
         if(swi.switchapps.size()!=0) {
             for (ImageView im : apps) {
@@ -279,8 +330,10 @@ public class FloatingSwitcher extends Service {
                         initialTouchY = event.getRawY();
                         int width = appsContainer.getWidth();
                         int height = appsContainer.getHeight();
-                        for (ImageView im : apps) {
-                            im.startAnimation(secondAnim);
+                        if(visible) {
+                            for (ImageView im : apps) {
+                                im.startAnimation(secondAnim);
+                            }
                         }
                         int[] location = new int[2];
                         appsContainer.getLocationOnScreen(location);
@@ -303,13 +356,34 @@ public class FloatingSwitcher extends Service {
                             if (!apporder) numApp = maxcount - numApp - 1;
                             if (swi.switchapps.size() > numApp) {
                                 AppInfo appInf = swi.switchapps.get(numApp);
-
-                                Intent in = new Intent(Intent.ACTION_MAIN);
+                                try {
+                                Intent in = getPackageManager().getLaunchIntentForPackage(appInf.getPackagename());
+                                if(swi.currentAppIsLauncher)
+                                {
+                                    PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, in, 0);
+                                    pendingIntent.send();
+                                } else {
+                                    ActivityOptions options =
+                                            ActivityOptions.makeCustomAnimation(getApplicationContext(), R.anim.show_dialogs,R.anim.hide_messages);
+                                    startActivity(in, options.toBundle());
+                                }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                        /*new Intent(Intent.ACTION_MAIN);
                                 in.setClassName(appInf.getPackagename(), appInf.getClassname());
-                                //  in.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                                 in.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 in.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION); // with animation or not
-                                startActivity(in);
+                                in.addCategory(Intent.CATEGORY_LAUNCHER);*/
+                               //
+
+
+                                   //
+
+                                   // ((Activity) ).overridePendingTransition(R.anim.emerge_from_right, R.anim.hide_from_right);
+
+
+
                             }
 
                         }
@@ -357,9 +431,9 @@ public class FloatingSwitcher extends Service {
         });
         loadSettings();
         butParams = getLayoutParams(butX, butY, butWidth, butHeight);
-        initialiseAppPanel(false);
+        initialiseAppPanel(true);
         windowManager.addView(touchpanel, butParams);
-        windowManager.addView(appsContainer, appsParams);
+       // windowManager.addView(appsContainer, appsParams);
 
     }
 
@@ -380,25 +454,27 @@ public class FloatingSwitcher extends Service {
     private void loadSettings()
     {
         if(!mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT)) return;
-        pointCount=mSettings.getInt(APP_PREFERENCES_POINT_COUNT, defaultInc);
+        pointCount = mSettings.getInt(APP_PREFERENCES_POINT_COUNT, defaultInc);
         getIncs();
         butWidth=mSettings.getInt(APP_PREFERENCES_BUTTON_WIDTH, butWidth)*incWidth;
-        butHeight= mSettings.getInt(APP_PREFERENCES_BUTTON_HEIGHT, butHeight)*butHeight;
+        butHeight= mSettings.getInt(APP_PREFERENCES_BUTTON_HEIGHT, butHeight)*incHeight;
         butY= mSettings.getInt(APP_PREFERENCES_BUTTON_Y, butY) * (incY-( butHeight/pointCount));;
-        butX=mSettings.getInt(APP_PREFERENCES_BUTTON_X, butX)* (incX-(butWidth/pointCount));
+        butX = mSettings.getInt(APP_PREFERENCES_BUTTON_X, butX)* (incX-(butWidth/pointCount));
         sweepDirection=mSettings.getInt(APP_PREFERENCES_SWEEP_DIRECTION, BottomTop);
         maxcount=mSettings.getInt(APP_PREFERENCES_APP_COUNT, defaultInc)+1;
+        iconCurPos=mSettings.getInt(APP_PREFERENCES_APP_ICON_SIZE, 0);
+        iconSize = iconSizeMin + iconSizeInc * iconCurPos;
         apporder=mSettings.getInt(APP_PREFERENCES_APP_ORDER, 0)==0;
         applayout=mSettings.getInt(APP_PREFERENCES_APP_LAYOUT, applayout);
         switch (applayout)
         {
             case VERTICAL:
-                appX=mSettings.getInt(APP_PREFERENCES_APP_X, appX)* (incX-(picSize/pointCount));
-                appY=mSettings.getInt(APP_PREFERENCES_APP_Y, appY)* (incY-(picSize*maxcount/pointCount));
+                appX=mSettings.getInt(APP_PREFERENCES_APP_X, appX)* (incX-(iconSize /pointCount));
+                appY=mSettings.getInt(APP_PREFERENCES_APP_Y, appY)* (incY-(iconSize *maxcount/pointCount));
                 break;
             case HORIZONTAL:
-                appX=mSettings.getInt(APP_PREFERENCES_APP_X, appX)* (incX-(picSize*maxcount/pointCount));
-                appY=mSettings.getInt(APP_PREFERENCES_APP_Y, appY)* (incY-(picSize/pointCount));
+                appX=mSettings.getInt(APP_PREFERENCES_APP_X, appX)* (incX-(iconSize *maxcount/pointCount));
+                appY=mSettings.getInt(APP_PREFERENCES_APP_Y, appY)* (incY-(iconSize /pointCount));
                 break;
         }
         setAnim(applayout, 0);
@@ -411,30 +487,55 @@ public class FloatingSwitcher extends Service {
             apps.add(new ImageView(this));
         }
         //im.setImageAlpha(0);
-        appsContainer =new LinearLayout(getApplication());
-        appsContainer.setOrientation(LinearLayout.VERTICAL);
-        for(ImageView im: apps) {
-            appsContainer.addView(im,new LinearLayout.LayoutParams(picSize,picSize));
+       // int orientation = -1;
+        if(appsContainer != null) {
+           // orientation = appsContainer.getOrientation();
+            appsContainer.removeAllViews();
+           // windowManager.removeView(appsContainer);
+        } else {
+            appsContainer = new LinearLayout(getApplication());
+            appsContainer.setOrientation(/*  orientation == -1 ? */ applayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL /*: orientation*/);
         }
-        appsContainer.setVisibility(View.GONE);
-        appsParams =getLayoutParams(appX, appY, picSize, picSize * maxcount);
+        if(activityIsVisible) {
+            appsContainer.setVisibility(View.VISIBLE);
+            appsContainer.setBackgroundColor(Color.BLUE);
+        }
+        else {
+            appsContainer.setVisibility(View.GONE);
+            appsContainer.setBackgroundColor(Color.TRANSPARENT);
+        }
+        iconSize = iconSizeMin + iconSizeInc * iconCurPos;
+        switch (appsContainer.getOrientation())
+        {
+            case LinearLayout.HORIZONTAL:
+                appsParams = getLayoutParams(appX, appY, iconSize * maxcount, iconSize );
+                break;
+            case LinearLayout.VERTICAL:
+                appsParams = getLayoutParams(appX, appY, iconSize, iconSize * maxcount);
+                break;
+        }
+
+
+        for(ImageView im: apps) {
+            appsContainer.addView(im,new LinearLayout.LayoutParams(iconSize, iconSize));
+        }
         if(newpanel) windowManager.addView(appsContainer, appsParams);
-        swi.maxcount=maxcount;
+        swi.maxCount =maxcount;
     }
     private void PropertyChanger(LayoutParams params, int value, String action)
     {
-         if (action.equals(ACTION_CHANGE_X)) {
+         if (action.equals(ACTION_CHANGE_BUTTON_X)) {
              params.x = value * (incX-(params.width/pointCount));
          }
-         else if (action.equals(ACTION_CHANGE_Y)) {
+         else if (action.equals(ACTION_CHANGE_BUTTON_Y)) {
              params.y = value * (incY-( params.height/pointCount));
         }
-         else if( action.equals(ACTION_CHANGE_WiDTH)) {
+         else if( action.equals(ACTION_CHANGE_BUTTON_WiDTH)) {
              int currValue = params.x / (incX-(params.width/pointCount));
              params.width=value * incWidth;
              params.x = currValue * (incX-(params.width/pointCount));
         }
-         else if( action.equals(ACTION_CHANGE_HEIGHT)) {
+         else if( action.equals(ACTION_CHANGE_BUTTON_HEIGHT)) {
              int currValue = params.y / (incY-( params.height/pointCount));
              params.height=value * incHeight;
              params.y = currValue * (incY-( params.height/pointCount));
@@ -444,18 +545,31 @@ public class FloatingSwitcher extends Service {
     {
         incX=size.x/pointCount+1;
         incY=size.y/pointCount-1;
+        iconSizeMin = Math.max(size.y, size.x) / 20;
+        int iconSizeMax = Math.max(size.y, size.x) / 8;
+        iconSizeInc = (iconSizeMax - iconSizeMin) / 20;
     }
     private void setAnim(int layout, int anim)
     {
         switch (layout)
         {
             case VERTICAL:
-                firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_left);
-                secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_left);
+                if(anim == 0) {
+                    firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_left);
+                    secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_left);
+                } else {
+                    firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_right);
+                    secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_right);
+                }
                 break;
             case HORIZONTAL:
-                firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_bottom);
-                secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_bottom);
+                if(anim == 0) {
+                    firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_bottom);
+                    secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_bottom);
+                } else {
+                    firstAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.emerge_from_top);
+                    secondAnim = AnimationUtils.loadAnimation(getApplication(), R.anim.hide_from_top);
+                }
                 break;
         }
         secondAnim.setAnimationListener(new Animation.AnimationListener() {
@@ -466,7 +580,9 @@ public class FloatingSwitcher extends Service {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                appsContainer.setVisibility(View.GONE);
+                if(!activityIsVisible) {
+                    appsContainer.setVisibility(View.GONE);
+                }
             }
 
             @Override

@@ -3,7 +3,6 @@ import android.app.usage.UsageStats;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.graphics.drawable.Drawable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,11 +11,14 @@ import java.util.List;
 
 public class SwitcherContainer {
 
-    static int maxcount;
+    boolean currentAppIsLauncher;
+    PackageManager pm;
+    static int maxCount;
     public ArrayList<AppInfo> switchapps;
     public SwitcherContainer(PackageManager pm, String ownpackage, int max){
 
-        maxcount=max;
+        maxCount =max;
+        this.pm = pm;
         Intent inten=new Intent(Intent.ACTION_MAIN);
         inten.addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> rInfo=pm.queryIntentActivities(inten, 0);
@@ -41,16 +43,20 @@ public class SwitcherContainer {
         switchapps=new ArrayList<AppInfo>();
         sortApps(stats);
         AppInfo app;
-        boolean match=false;
+        boolean match = false;
         for (UsageStats stat: stats){
             app=AppContainer.getApp(stat.getPackageName());
             if(!match){
                 match=true;
-                if(app!=null) continue;
+                currentAppIsLauncher = currentAppIsLauncher(stat.getPackageName());
+                 continue;
             }
-            if(app!=null)switchapps.add(app);
-            else continue;
-            if(switchapps.size()==maxcount) break;
+            if(app!=null) {
+
+                switchapps.add(app);
+            }
+            //else continue;
+            if(switchapps.size() == maxCount) break;
         }
 
     }
@@ -64,5 +70,17 @@ public class SwitcherContainer {
                 else return 0;
             }
         });
+    }
+    private boolean currentAppIsLauncher(String packageName)
+    {
+        Intent inten=new Intent(Intent.ACTION_MAIN);
+        inten.addCategory(Intent.CATEGORY_HOME);
+        List<ResolveInfo> list = pm.queryIntentActivities(inten, 0);
+        for(ResolveInfo item : list)
+        {
+            if(item.activityInfo.packageName.equals(packageName))
+                return true;
+        }
+        return false;
     }
 }
