@@ -22,7 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".FloatingSwitcher" />
+        <service android:name=".FloatingSwitcher"
+        />
+        <!--android:process="switchapp.service"
+           android:exported="true"
+           android:isolatedProcess="true" -->
         <!-- ATTENTION: This was auto-generated to add Google Play services to your project for
              App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data

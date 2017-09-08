@@ -5,6 +5,7 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -18,10 +19,13 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -50,6 +54,9 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     SeekBar yAppsChange;
     SeekBar AppCount;
     SeekBar AppIconSize;
+
+    ScrollView settingsContainer;
+    int offset;
 
     public LinearLayout ll;
 
@@ -82,6 +89,19 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         AppCount=(SeekBar) v.findViewById(R.id.AppCount);
         AppIconSize=(SeekBar) v.findViewById(R.id.AppIconSize);
         ll=(LinearLayout)v.findViewById(R.id.properties);
+
+        WindowManager windowManager = (WindowManager)getActivity().getSystemService(getActivity().WINDOW_SERVICE);
+        Point size = new Point();
+        windowManager.getDefaultDisplay().getSize(size);
+        FrameLayout top = (FrameLayout) v.findViewById(R.id.topPadding);
+        FrameLayout bottom = (FrameLayout) v.findViewById(R.id.bottomPadding);
+        ViewGroup.LayoutParams params =  top.getLayoutParams();
+        offset = size.y;
+        params.height = offset;
+        top.setLayoutParams(params);
+        bottom.setLayoutParams(params);
+
+        settingsContainer = (ScrollView) v.findViewById(R.id.settingsContainer);
 
         SeekBar.OnSeekBarChangeListener seeklistener =new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -177,10 +197,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_LAYOUT, position);
                 switch (position)
                 {
-                    case FloatingSwitcher.VERTICAL:
+                    case FloatingWindowContainer.VERTICAL:
                         appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
                         break;
-                    case FloatingSwitcher.HORIZONTAL:
+                    case FloatingWindowContainer.HORIZONTAL:
                         appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
                         break;
                 }
@@ -213,6 +233,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
                 if (isChecked)
                     if(checkPermissions()) {
+                        saveSettings();
                         getActivity().startService(new Intent(getActivity(), FloatingSwitcher.class));
                     } else {
                         isChecked = false;
@@ -234,9 +255,15 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         super.onResume();
         mReceiver = new AppResultsReceiver(new Handler());
         mReceiver.setReceiver(this);
+        settingsContainer.post(new Runnable() {
+            @Override
+            public void run() {
+                settingsContainer.scrollTo(0, offset);
+            }
+        });
         loadSettings();
         if(isMyServiceRunning(FloatingSwitcher.class)) {
-            sendParam(FloatingSwitcher.ACTION_INI, xchange.getMax());
+            //sendParam(FloatingSwitcher.ACTION_INI, xchange.getMax());
             sendParam(FloatingSwitcher.ACTION_APPS_VISIBILITY, 0);
         }
         //((ArrayAdapter<UsageStats>)getListAdapter()).notifyDataSetChanged();
@@ -274,10 +301,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         appLayout.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_LAYOUT, 0));
         ;
         switch (appLayout.getSelectedItemPosition()) {
-            case FloatingSwitcher.VERTICAL:
+            case FloatingWindowContainer.VERTICAL:
                 appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
                 break;
-            case FloatingSwitcher.HORIZONTAL:
+            case FloatingWindowContainer.HORIZONTAL:
                 appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
                 break;
         }
