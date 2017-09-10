@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -44,6 +45,8 @@ public class FloatingWindowContainer {
     private LinearLayout iconContainer;
     private ArrayList<ImageView> iconViews;
     private WindowManager.LayoutParams iconPanelParams;
+
+    private ImageView backgroundWindow;
 
     private Animation firstAnim;
     private Animation secondAnim;
@@ -86,6 +89,7 @@ public class FloatingWindowContainer {
         updateScreenSize();
         this.iconSize = calculteIconSize(iconSize);
         setAnim(iconAnim);
+        initialiseBackgroung();
         initialiseButton(touchPanel, butParams, buttonX, buttonY, buttonHeight, buttonWidth);
         initialiseIconPanel(true, iconPanelX, iconPanelY);
 
@@ -170,6 +174,21 @@ public class FloatingWindowContainer {
             windowManager.addView(iconContainer, iconPanelParams);
         }
         else recycleViews();
+    }
+    private void initialiseBackgroung()
+    {
+        backgroundWindow = new ImageView(context);
+        backgroundWindow.setImageResource(R.drawable.background);
+        backgroundWindow.setAlpha(0.5f);
+        backgroundWindow.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        WindowManager.LayoutParams params = getLayoutParams(0, 0, screenSize.x, screenSize.y);
+        windowManager.addView(backgroundWindow, params);
+        hideBackground();
     }
 
     private void initialiseButton(ImageView view, WindowManager.LayoutParams params, int x, int y, int height, int width) {
@@ -263,6 +282,7 @@ public class FloatingWindowContainer {
                         if (doIt) {
                             service.updateAppList();
                             iconContainer.setVisibility(View.VISIBLE);
+                            showBackground();
                             for (ImageView im : iconViews) {
                                 im.startAnimation(firstAnim);
                             }
@@ -282,8 +302,21 @@ public class FloatingWindowContainer {
     }
     private void recycleViews()
     {
-        windowManager.updateViewLayout(touchPanel, butParams);
-        windowManager.updateViewLayout(iconContainer, iconPanelParams);
+       // Log.e("RECYCLE", postMethod + "");
+            touchPanel.post(new Runnable() {
+                @Override
+                public void run() {
+                    windowManager.updateViewLayout(touchPanel, butParams);
+                }
+            });
+            iconContainer.post(new Runnable() {
+                @Override
+                public void run() {
+                    windowManager.updateViewLayout(iconContainer, iconPanelParams);
+                }
+            });
+
+
     }
     private int calculteIconSize( int value )
     {
@@ -315,6 +348,7 @@ public class FloatingWindowContainer {
     {
         return value * incHeight;
     }
+
     private void changeHeight(WindowManager.LayoutParams params, int value)
     {
         int currValue = params.y / (incY - ( params.height / pointCount));
@@ -325,18 +359,19 @@ public class FloatingWindowContainer {
     {
         return incWidth * value;
     }
+
     private void changeWidth(WindowManager.LayoutParams params, int value)
     {
         int currValue = params.x / (incX - (params.width / pointCount));
         params.width = calculateWidth(value);
         params.x = calculateX(params.width, currValue);
     }
-    public void changeButonWidth(int value)
+    public void changeButtonWidth(int value)
     {
         changeWidth(butParams, value);
         recycleViews();
     }
-    public void changeButonHeight(int value)
+    public void changeButtonHeight(int value)
     {
         changeHeight(butParams, value);
         recycleViews();
@@ -426,9 +461,11 @@ public class FloatingWindowContainer {
 
             @Override
             public void onAnimationEnd(Animation animation) {
+                hideBackground();
                 if(!iconPanelIsVisible) {
                     iconContainer.setVisibility(View.GONE);
                 }
+
             }
 
             @Override
@@ -451,6 +488,15 @@ public class FloatingWindowContainer {
         iconContainer.setBackgroundColor(Color.TRANSPARENT);
         iconPanelIsVisible = false;
         recycleViews();
+        hideBackground();
+    }
+    private void showBackground()
+    {
+        backgroundWindow.setVisibility(View.VISIBLE);
+    }
+    private void hideBackground()
+    {
+        backgroundWindow.setVisibility(View.GONE);
     }
 
     public void changeIconLayout(int layout)

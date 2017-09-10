@@ -17,7 +17,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
@@ -101,7 +100,7 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
 
     private void createAppSwitcher(int maxCount)
     {
-        PackageManager pm = getApplication().getPackageManager();
+        PackageManager pm = getApplication().getPackageManager(); 
         appSwither = new SwitcherContainer(pm,getPackageName(), maxCount);
     }
 
@@ -163,10 +162,10 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
             }
             else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_WiDTH))
             {
-                winContainer.changeButonWidth(intent.getIntExtra(PARAM, defaultSpinnerValue));
+                winContainer.changeButtonWidth(intent.getIntExtra(PARAM, defaultSpinnerValue));
             }else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_HEIGHT))
             {
-                winContainer.changeButonHeight(intent.getIntExtra(PARAM, defaultSpinnerValue));
+                winContainer.changeButtonHeight(intent.getIntExtra(PARAM, defaultSpinnerValue));
             }
             else if(intent.getAction().equals(ACTION_CHANGE_BUTTON_SWEEPDIRECTION))
             {
@@ -287,7 +286,6 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
                                 in.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                               //  in.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION); // with animation or not
                                 in.addCategory(Intent.CATEGORY_LAUNCHER);
-                Log.e("TEST", appSwither.currentAppIsLauncher + "");
                 if(appSwither.currentAppIsLauncher)
                 {
                     PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, in, 0);
@@ -325,7 +323,7 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
             @Override
             public void run() {
                 try {
-                    while(true) {
+
                         sleep(500);
                         int butY = 10;
                         int butX = 10;
@@ -339,7 +337,7 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
                         winContainer.changeButtonY(butY);
                         winContainer.ChangeIconPanelX(appX);
                         winContainer.ChangeIconPanelY(appY);
-                    }
+
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

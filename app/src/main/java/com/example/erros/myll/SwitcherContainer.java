@@ -68,7 +68,6 @@ public class SwitcherContainer {
             if(!match){
                 match=true;
                 currentAppIsLauncher = currentAppIsLauncher(stat.getPackageName());
-                Log.e("TEST", stat.getPackageName());
                 continue;
             }
             if(app!=null && !switchapps.contains(app)) {
