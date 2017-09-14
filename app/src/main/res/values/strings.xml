@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">Myll</string>
     <string name="action_settings">Settings</string>
+    <string name="drag_floating_button">Drag floating button</string>
+    <string name="drag_app_panel">Drag app panel</string>
+    <string name="choose_color">Choose color</string>
+    <string name="choose_transparent_color">Set transparent color</string>
+    <string name="button_ok">OK</string>
+    <string name="button_cancel">Cancel</string>
     <string name="lackOfApps">Недостаточно недавно запущенных приложений</string>
     <string-array name="sweepdirection">
         <item>Снизу вверх</item>

@@ -3,9 +3,13 @@ package com.example.erros.myll;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -16,14 +20,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -31,6 +34,11 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
+
+import com.flask.colorpicker.ColorPickerView;
+import com.flask.colorpicker.OnColorSelectedListener;
+import com.flask.colorpicker.builder.ColorPickerClickListener;
+import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
 public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
@@ -46,14 +54,16 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     private Spinner appLayout;
     private Spinner appAnim;
     private Switch OnOff;
+    private Switch dragButton;
+    private Switch dragAppPanel;
     private boolean onoff;
 
-    SeekBar xchange;
-    SeekBar ychange;
+    private Button chooseColor;
+    private Button transparentColor;
+
     SeekBar widhtChange;
     SeekBar heightChange;
-    SeekBar xAppSChange;
-    SeekBar yAppsChange;
+
     SeekBar AppCount;
     SeekBar AppIconSize;
 
@@ -75,6 +85,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v=inflater.inflate(R.layout.fragment, container, false);
         initialise(v);
+
         return v;
 
     }
@@ -82,15 +93,15 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     {
         mSettings = getActivity().getSharedPreferences(FloatingSwitcher.APP_PREFERENCES, Context.MODE_PRIVATE);
         mEditor= mSettings.edit();
-        xchange=(SeekBar) v.findViewById( R.id.xpanel);
-        ychange=(SeekBar) v.findViewById( R.id.ypanel);
+
         widhtChange=(SeekBar) v.findViewById(R.id.widthpanel);
         heightChange=(SeekBar) v.findViewById(R.id.heightpanel);
-        xAppSChange=(SeekBar)v.findViewById(R.id.xAppPanel);
-        yAppsChange=(SeekBar)v.findViewById(R.id.yAppPanel);
+
         AppCount=(SeekBar) v.findViewById(R.id.AppCount);
         AppIconSize=(SeekBar) v.findViewById(R.id.AppIconSize);
         ll=(LinearLayout)v.findViewById(R.id.properties);
+        chooseColor = (Button) v.findViewById(R.id.butChooseColor);
+        transparentColor = (Button) v.findViewById(R.id.butTransparentColor);
 
         WindowManager windowManager = (WindowManager)getActivity().getSystemService(getActivity().WINDOW_SERVICE);
         Point size = new Point();
@@ -105,32 +116,20 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
         settingsContainer = (ScrollView) v.findViewById(R.id.settingsContainer);
 
-        SeekBar.OnSeekBarChangeListener seeklistener =new SeekBar.OnSeekBarChangeListener() {
+        SeekBar.OnSeekBarChangeListener seeklistener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 switch(seekBar.getId()) {
-                    case R.id.xpanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_X,progress);
-                        break;
-                    case R.id.ypanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_Y, progress);
-                        break;
                     case R.id.widthpanel:
                         sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_WiDTH, progress);
                         break;
                     case R.id.heightpanel:
                         sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_HEIGHT, progress);
                         break;
-                    case R.id.xAppPanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_X, progress);
-                        break;
-                    case R.id.yAppPanel:
-                        sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_Y, progress);
-                        break;
-                    case    R.id.AppCount:
+                    case R.id.AppCount:
                         sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_COUNT, progress);
                         break;
-                    case    R.id.AppIconSize:
+                    case R.id.AppIconSize:
                         sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ICON_SIZE, progress);
                         break;
                 }
@@ -146,14 +145,28 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
             }
         };
-        xchange.setOnSeekBarChangeListener(seeklistener);
-        ychange.setOnSeekBarChangeListener(seeklistener);
         widhtChange.setOnSeekBarChangeListener(seeklistener);
         heightChange.setOnSeekBarChangeListener(seeklistener);
-        xAppSChange.setOnSeekBarChangeListener(seeklistener);
-        yAppsChange.setOnSeekBarChangeListener(seeklistener);
         AppCount.setOnSeekBarChangeListener(seeklistener);
         AppIconSize.setOnSeekBarChangeListener(seeklistener);
+
+        dragButton = (Switch)v.findViewById(R.id.dragFloatindButton);
+        dragButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_BUTTON, isChecked ? 1 : 0);
+            }
+        });
+
+        dragAppPanel = (Switch)v.findViewById(R.id.dragAppPanel);
+        dragAppPanel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_APPS, isChecked ? 1 : 0);
+            }
+        });
 
         SweepDirect=(Spinner)v.findViewById(R.id.SweepDirection);
         appOrder =(Spinner)v.findViewById(R.id.AppOrder);
@@ -249,6 +262,50 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             }
         });
 
+        chooseColor.setOnClickListener(new View.OnClickListener() {
+           
+            @Override
+            public void onClick(View view) {
+                ColorPickerDialogBuilder
+                        .with(getActivity())
+                        .setTitle(getResources().getString(R.string.choose_color))
+                        //.initialColor(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT))
+                        .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                        .density(12)
+                        .setOnColorSelectedListener(new OnColorSelectedListener() {
+                            @Override
+                            public void onColorSelected(int selectedColor) {
+                                //toast("onColorSelected: 0x" + Integer.toHexString(selectedColor));
+                                sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
+                            }
+                        })
+                        .setPositiveButton(getResources().getString(R.string.button_ok), new ColorPickerClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
+                                sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
+                                mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
+                                mEditor.apply();
+                            }
+                        })
+                        .setNegativeButton(getResources().getString(R.string.button_cancel), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .build()
+                        .show();
+            }
+        });
+        transparentColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
+                mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
+                mEditor.apply();
+            }
+        });
+
     }
 
 
@@ -290,18 +347,14 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
     private void loadSettings(){
         if(!mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT)) return;
-        xchange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_X, defaultCoor));
-        ychange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_Y, defaultCoor));
         widhtChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_WIDTH, defaultCoor));
         heightChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_HEIGHT, defaultCoor));
-        xAppSChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_X, defaultCoor));
-        yAppsChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_Y, defaultCoor));
         AppCount.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_COUNT, defaultCoor));
         AppIconSize.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ICON_SIZE, defaultCoor));
         SweepDirect.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_SWEEP_DIRECTION, 0));
         appOrder.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ORDER, 0));
         appLayout.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_LAYOUT, 0));
-        ;
+
         switch (appLayout.getSelectedItemPosition()) {
             case FloatingWindowContainer.VERTICAL:
                 appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
@@ -313,14 +366,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         appAnim.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ANIM, 0));
     }
     private void saveSettings(){
-        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_X, xchange.getProgress());
-        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_Y, ychange.getProgress());
+        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT, widhtChange.getMax());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_WIDTH, widhtChange.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_HEIGHT, heightChange.getProgress());
-        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT, xchange.getMax());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_SWEEP_DIRECTION, SweepDirect.getSelectedItemPosition());
-        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_X, xAppSChange.getProgress());
-        mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_Y, yAppsChange.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_COUNT, AppCount.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ICON_SIZE, AppIconSize.getProgress());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
@@ -475,6 +524,15 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+    
+    private int getBackgroundColor(View v)
+    {
+        int color = Color.TRANSPARENT;
+        Drawable background = v.getBackground();
+        if (background instanceof ColorDrawable)
+            color = ((ColorDrawable) background).getColor();
+        return color;
     }
 }
 

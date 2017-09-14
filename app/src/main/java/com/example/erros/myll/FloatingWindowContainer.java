@@ -1,6 +1,7 @@
 package com.example.erros.myll;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -38,7 +39,7 @@ public class FloatingWindowContainer {
     private ISwitcherService service;
 
     // touch panel
-    private ImageView touchPanel;
+    private ImageView buttonView;
     private WindowManager.LayoutParams butParams;
 
     // iconViews panel
@@ -46,13 +47,15 @@ public class FloatingWindowContainer {
     private ArrayList<ImageView> iconViews;
     private WindowManager.LayoutParams iconPanelParams;
 
-    private ImageView backgroundWindow;
+    private ImageView backgroundView;
+    private WindowManager.LayoutParams backgroundParams;
 
     private Animation firstAnim;
     private Animation secondAnim;
 
 
     private Point screenSize = new Point();
+    private Point fullScreenSize = new Point();
     private int pointCount;
     private int maxCount;
 
@@ -73,10 +76,22 @@ public class FloatingWindowContainer {
     private int iconAnim;
 
     public boolean iconPanelIsVisible = true;
+    private boolean isDraggableFloatingButton = false;
+    private boolean isDraggableIconPanel = false;
+
+    private int screenOrientation;
+    private int buttonPortraitX;
+    private int buttonPortraitY;
+    private int buttonLandscapeX;
+    private int buttonLandscapeY;
+    private int buttonColor = Color.TRANSPARENT;
+
+    private int statusBarHeight = 0;
 
     public FloatingWindowContainer(Context context,ISwitcherService service, WindowManager windowManager, int maxCount,
                                    int pointCount, int iconLayout, boolean iconOrder, int buttonWidth, int buttonHeight,
-                                   int buttonX, int buttonY, int sweepDirection, int iconSize, int iconPanelX, int iconPanelY, int iconAnim)
+                                   int buttonPortraitX, int buttonPortraitY, int buttonLandscapeX, int buttonLandscapeY,
+                                   int sweepDirection, int iconSize, int iconPanelX, int iconPanelY, int iconAnim, int buttonOrientation, int buttonColor)
     {
         this.context = context;
         this.service = service;
@@ -86,12 +101,24 @@ public class FloatingWindowContainer {
         this.iconOrder = iconOrder;
         this.iconPanelLayout = iconLayout;
         this.sweepDirection = sweepDirection;
+        this.screenOrientation = buttonOrientation;
+        this.buttonPortraitX = buttonPortraitX;
+        this.buttonPortraitY = buttonPortraitY;
+        this.buttonLandscapeX = buttonLandscapeX;
+        this.buttonLandscapeY = buttonLandscapeY;
+        this.buttonColor = buttonColor;
         updateScreenSize();
         this.iconSize = calculteIconSize(iconSize);
         setAnim(iconAnim);
-        initialiseBackgroung();
-        initialiseButton(touchPanel, butParams, buttonX, buttonY, buttonHeight, buttonWidth);
+
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            statusBarHeight =  context.getResources().getDimensionPixelSize(resourceId);
+        }
+        initialiseBackground();
+        initialiseButton(buttonView, butParams, buttonHeight, buttonWidth);
         initialiseIconPanel(true, iconPanelX, iconPanelY);
+        initialiseFullScreenDetector();
 
     }
     private void calculateIncs()
@@ -143,7 +170,7 @@ public class FloatingWindowContainer {
                 break;
         }
         int appX = iconPanelX, appY = iconPanelY;
-        if(newpanel) {
+      /*  if(newpanel) {
             switch (iconPanelLayout) {
                 case VERTICAL:
                     appX = iconPanelX * (incX - (iconSize / pointCount));
@@ -154,7 +181,7 @@ public class FloatingWindowContainer {
                     appY = iconPanelY * (incY - (iconSize / pointCount));
                     break;
             }
-        }
+        }*/
 
         if(appX + width > screenSize.x)
         {
@@ -172,121 +199,180 @@ public class FloatingWindowContainer {
         }
         if(newpanel) {
             windowManager.addView(iconContainer, iconPanelParams);
+            iconContainer.setOnTouchListener(new View.OnTouchListener() {
+                private int initialX;
+                private int initialY;
+                private float initialTouchX;
+                private float initialTouchY;
+                @Override
+                public boolean onTouch(View view, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            initialX = iconPanelParams.x;
+                            initialY = iconPanelParams.y;
+                            initialTouchX = event.getRawX();
+                            initialTouchY = event.getRawY();
+                            break;
+                        case MotionEvent.ACTION_UP:
+
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            if(isDraggableIconPanel) {
+                                iconPanelParams.x = initialX - (int) (initialTouchX - event.getRawX());
+                                iconPanelParams.y = initialY - (int) (initialTouchY - event.getRawY());
+                                recycleViews();
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
         }
         else recycleViews();
     }
-    private void initialiseBackgroung()
+    private void initialiseBackground()
     {
-        backgroundWindow = new ImageView(context);
-        backgroundWindow.setImageResource(R.drawable.background);
-        backgroundWindow.setAlpha(0.5f);
-        backgroundWindow.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+        backgroundView = new ImageView(context);
+        backgroundView.setImageResource(R.drawable.background);
+        backgroundView.setAlpha(0.5f);
+        backgroundView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        WindowManager.LayoutParams params = getLayoutParams(0, 0, screenSize.x, screenSize.y);
-        windowManager.addView(backgroundWindow, params);
+        backgroundParams = getLayoutParams(0, 0, fullScreenSize.x, fullScreenSize.y);
+        windowManager.addView(backgroundView, backgroundParams);
         hideBackground();
     }
 
-    private void initialiseButton(ImageView view, WindowManager.LayoutParams params, int x, int y, int height, int width) {
-        touchPanel = new ImageView(context);
-        touchPanel.setImageResource(R.drawable.touchpanel);
-        touchPanel.setOnTouchListener(new View.OnTouchListener() {
+    private void initialiseButton(ImageView view, WindowManager.LayoutParams params, int height, int width) {
+        buttonView = new ImageView(context);
+        //buttonView.setImageResource(R.drawable.touchpanel);
+        buttonView.setBackgroundColor(buttonColor);
+        buttonView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
             private float initialTouchX;
             private float initialTouchY;
-            private long touchStartTime = 0;
             boolean visible = false;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                //remove face bubble on long press
-                   /* if(System.currentTimeMillis()-touchStartTime>ViewConfiguration.getLongPressTimeout() && initialTouchX== event.getX()){
-                        windowManager.removeView(touchPanel);
-                        stopSelf();
-                        return false;
-                    }*/
+
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                            /*touchStartTime = System.currentTimeMillis();
-                            initialX = butParams.x;
-                            initialY = butParams.y;*/
+                        initialX = butParams.x;
+                        initialY = butParams.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
                         break;
                     case MotionEvent.ACTION_UP:
-                        initialTouchX = event.getRawX();
-                        initialTouchY = event.getRawY();
-                        int width = iconContainer.getWidth();
-                        int height = iconContainer.getHeight();
-                        if(visible) {
-                            for (ImageView im : iconViews) {
-                                im.startAnimation(secondAnim);
+                        if(!isDraggableFloatingButton) {
+                            initialTouchX = event.getRawX();
+                            initialTouchY = event.getRawY();
+                            int width = iconContainer.getWidth();
+                            int height = iconContainer.getHeight();
+                            if (visible) {
+                                for (ImageView im : iconViews) {
+                                    im.startAnimation(secondAnim);
+                                }
+                            }
+                            int[] location = new int[2];
+                            iconContainer.getLocationOnScreen(location);
+                            if (initialTouchX > location[0]
+                                    && initialTouchX < location[0] + width
+                                    && initialTouchY > location[1]
+                                    && initialTouchY < location[1] + height) {
+
+                                int numIcon = 0, perIcon = 0;
+                                switch (iconPanelLayout) {
+                                    case VERTICAL:
+                                        perIcon = height / iconViews.size();
+                                        numIcon = (int) (height - (initialTouchY - location[1])) / perIcon;
+                                        break;
+                                    case HORIZONTAL:
+                                        perIcon = width / iconViews.size();
+                                        numIcon = (int) (width - (initialTouchX - location[0])) / perIcon;
+                                        break;
+                                }
+                                if (!iconOrder) numIcon = maxCount - numIcon - 1;
+                                service.startApplication(numIcon);
+
+                            }
+                            visible = false;
+                        } else {
+                            switch (screenOrientation)
+                            {
+                                case Configuration.ORIENTATION_PORTRAIT:
+                                    roundPosition();
+                                    buttonPortraitX = butParams.x;
+                                    buttonPortraitY = butParams.y;
+                                    buttonLandscapeX = (int)Math.ceil(((double) (buttonPortraitX + butParams.width) / screenSize.x) * screenSize.y - butParams.width);
+                                    buttonLandscapeY = (int)Math.ceil(((double)(buttonPortraitY + butParams.height) / screenSize.y) * screenSize.x - butParams.height);
+                                    break;
+                                case Configuration.ORIENTATION_LANDSCAPE:
+                                    roundPosition();
+                                    buttonLandscapeX = butParams.x;
+                                    buttonLandscapeY = butParams.y;
+                                    buttonPortraitX = (int)Math.ceil(((double) (buttonLandscapeX + butParams.width) / screenSize.x) * screenSize.y - butParams.width);
+                                    buttonPortraitY = (int)Math.ceil(((double)(buttonLandscapeY + butParams.height) / screenSize.y) * screenSize.x - butParams.height);
+                                    break;
                             }
                         }
-                        int[] location = new int[2];
-                        iconContainer.getLocationOnScreen(location);
-                        if (initialTouchX > location[0]
-                                && initialTouchX < location[0] + width
-                                && initialTouchY > location[1]
-                                && initialTouchY < location[1] + height) {
-
-                            int numIcon = 0, perIcon = 0;
-                            switch (iconPanelLayout) {
-                                case VERTICAL:
-                                    perIcon = height / iconViews.size();
-                                    numIcon = (int) (height - (initialTouchY - location[1])) / perIcon;
-                                    break;
-                                case HORIZONTAL:
-                                    perIcon = width / iconViews.size();
-                                    numIcon = (int) (width - (initialTouchX - location[0])) / perIcon;
-                                    break;
-                            }
-                            if (!iconOrder) numIcon = maxCount - numIcon - 1;
-                            service.startApplication(numIcon);
-
-                        }
-                        visible = false;
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        boolean doIt = false;
-                        switch (sweepDirection) {
-                            case BottomTop:
-                                if (initialTouchY - event.getRawY() > screenSize.y * 0.05 && !visible) {
-                                    doIt = true;
-                                }
-                                break;
-                            case TopBottom:
-                                if (event.getRawY() - initialTouchY > screenSize.y * 0.05 && !visible) {
-                                    doIt = true;
-                                }
-                                break;
-                            case RightLeft:
-                                if (initialTouchX - event.getRawX() > screenSize.x * 0.05 && !visible) {
-                                    doIt = true;
-                                }
-                                break;
-                            case LeftRight:
-                                if (event.getRawX() - initialTouchX > screenSize.x * 0.05 && !visible) {
-                                    doIt = true;
-                                }
-                                break;
-                            default:
-                                sweepDirection = BottomTop;
-                                break;
-                        }
-                        if (doIt) {
-                            service.updateAppList();
-                            iconContainer.setVisibility(View.VISIBLE);
-                            showBackground();
-                            for (ImageView im : iconViews) {
-                                im.startAnimation(firstAnim);
+                        if(!isDraggableFloatingButton) {
+                            boolean doIt = false;
+                            switch (sweepDirection) {
+                                case BottomTop:
+                                    if (initialTouchY - event.getRawY() > screenSize.y * 0.05 && !visible) {
+                                        doIt = true;
+                                    }
+                                    break;
+                                case TopBottom:
+                                    if (event.getRawY() - initialTouchY > screenSize.y * 0.05 && !visible) {
+                                        doIt = true;
+                                    }
+                                    break;
+                                case RightLeft:
+                                    if (initialTouchX - event.getRawX() > screenSize.x * 0.05 && !visible) {
+                                        doIt = true;
+                                    }
+                                    break;
+                                case LeftRight:
+                                    if (event.getRawX() - initialTouchX > screenSize.x * 0.05 && !visible) {
+                                        doIt = true;
+                                    }
+                                    break;
+                                default:
+                                    sweepDirection = BottomTop;
+                                    break;
                             }
-                            visible = true;
+                            if (doIt) {
+                                service.updateAppList();
+                                iconContainer.setVisibility(View.VISIBLE);
+                                showBackground();
+                                for (ImageView im : iconViews) {
+                                    im.startAnimation(firstAnim);
+                                }
+                                visible = true;
+                            }
+                        }
+                        else {
+
+                            int newX = initialX - (int) (initialTouchX - event.getRawX());
+                            int newY = initialY - (int) (initialTouchY - event.getRawY());
+                            if(newX >= 0 && screenSize.x >= newX + butParams.width)
+                            {
+                                butParams.x = newX;
+                            }
+                            if(newY >= 0 &&  screenSize.y >= newY + butParams.height)
+                            {
+                                butParams.y = newY;
+
+                            }
+                            recycleViews();
                         }
                         break;
                 }
@@ -295,18 +381,86 @@ public class FloatingWindowContainer {
         });
         int butWidth = calculateWidth(width);
         int butHeight = calculateHeight(height);
-        int butX = calculateX(butWidth, x);
-        int butY = calculateY(butHeight, y);
-        butParams = getLayoutParams(butX, butY, butWidth, butHeight);
-        windowManager.addView(touchPanel, butParams);
+        //int butX = calculateX(butWidth, x);
+       // int butY = calculateY(butHeight, y);
+        switch (screenOrientation)
+        {
+            case Configuration.ORIENTATION_PORTRAIT:
+                butParams = getLayoutParams(buttonPortraitX, buttonPortraitY, butWidth, butHeight);
+                break;
+            case Configuration.ORIENTATION_LANDSCAPE:
+                butParams = getLayoutParams(buttonLandscapeX, buttonLandscapeY, butWidth, butHeight);
+                break;
+        }
+
+        windowManager.addView(buttonView, butParams);
+    }
+    private void roundPosition()
+    {
+        if(butParams.x < screenSize.x * 0.01f) {
+            butParams.x = 0;
+        }
+        if(screenSize.x - (butParams.x + butParams.width)  < screenSize.x * 0.01f) {
+            butParams.x = screenSize.x - butParams.width;
+        }
+        if(butParams.y < screenSize.y * 0.01f) {
+            butParams.y = 0;
+        }
+        if(screenSize.y - (butParams.y + butParams.height)  < screenSize.y * 0.01f) {
+            butParams.y = screenSize.y - butParams.height;
+        }
+    }
+    private void initialiseFullScreenDetector()
+    {
+        LinearLayout fullScreenDetectorView = new LinearLayout(context);
+        WindowManager.LayoutParams fullScreenDetectorParams = getLayoutParams(0 ,0, WindowManager.LayoutParams.MATCH_PARENT, 0);
+        fullScreenDetectorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+            @Override
+            public void onSystemUiVisibilityChange(int i) {
+                Log.e("SCREEN", screenSize.x + " " + screenSize.y);
+                Log.e("SCREEN", fullScreenSize.x + " " + fullScreenSize.y);
+                Log.e("BUTTON POS", butParams.x + " " + butParams.y);
+                Log.e("BUTTON PARAM", butParams.width + " " + butParams.height);
+
+                if( i == 0)
+                {
+                    switch (screenOrientation)
+                    {
+                        case Configuration.ORIENTATION_PORTRAIT:
+                            butParams.x = buttonPortraitX;
+                            butParams.y = buttonPortraitY;
+                            break;
+                        case Configuration.ORIENTATION_LANDSCAPE:
+                            butParams.x = buttonLandscapeX;
+                            butParams.y = buttonLandscapeY;
+                            break;
+                    }
+                } else {
+                    if(butParams.x + butParams.width == screenSize.x)
+                    {
+                        butParams.x += fullScreenSize.x - screenSize.x;
+                        Log.e("FULL", "EXPAND X");
+                    }
+                    if(butParams.y + butParams.height == screenSize.y)
+                    {
+                        butParams.y += fullScreenSize.y - screenSize.y;
+                        Log.e("FULL", "EXPAND Y");
+                    } else if( butParams.y != 0){
+                        butParams.y += statusBarHeight;
+                    }
+                }
+                recycleViews();
+            }
+        });
+        windowManager.addView(fullScreenDetectorView, fullScreenDetectorParams);
     }
     private void recycleViews()
     {
        // Log.e("RECYCLE", postMethod + "");
-            touchPanel.post(new Runnable() {
+            buttonView.post(new Runnable() {
                 @Override
                 public void run() {
-                    windowManager.updateViewLayout(touchPanel, butParams);
+                    windowManager.updateViewLayout(buttonView, butParams);
                 }
             });
             iconContainer.post(new Runnable() {
@@ -492,11 +646,11 @@ public class FloatingWindowContainer {
     }
     private void showBackground()
     {
-        backgroundWindow.setVisibility(View.VISIBLE);
+        backgroundView.setVisibility(View.VISIBLE);
     }
     private void hideBackground()
     {
-        backgroundWindow.setVisibility(View.GONE);
+        backgroundView.setVisibility(View.GONE);
     }
 
     public void changeIconLayout(int layout)
@@ -521,12 +675,18 @@ public class FloatingWindowContainer {
     public void removeViews()
     {
         windowManager.removeView(iconContainer);
-        windowManager.removeView(touchPanel);
+        windowManager.removeView(buttonView);
     }
     public void updateScreenSize()
     {
         windowManager.getDefaultDisplay().getSize(screenSize);
+        windowManager.getDefaultDisplay().getRealSize(fullScreenSize);
         calculateIncs();
+        if(backgroundParams != null) {
+            backgroundParams.height = screenSize.y;
+            backgroundParams.width = screenSize.x;
+            windowManager.updateViewLayout(backgroundView, backgroundParams);
+        }
     }
 
 
@@ -543,40 +703,56 @@ public class FloatingWindowContainer {
         Params.height= height;
         return Params;
     }
+    public void dragFloatingButton(boolean value)
+    {
+        isDraggableFloatingButton = value;
+    }
 
-    /*
+    public void dragIconPanel(boolean value)
+    {
+        isDraggableIconPanel = value;
+    }
 
-      if(!mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT)) return;
-        int pointCount = mSettings.getInt(APP_PREFERENCES_POINT_COUNT, defaultInc);
-        int butWidth = mSettings.getInt(APP_PREFERENCES_BUTTON_WIDTH, butWidth) * incWidth;
-        butHeight = mSettings.getInt(APP_PREFERENCES_BUTTON_HEIGHT, butHeight) * incHeight;
-        butY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y, butY) * (incY - (butHeight/pointCount));
-        butX = mSettings.getInt(APP_PREFERENCES_BUTTON_X, butX) * (incX - (butWidth/pointCount));
-        sweepDirection = mSettings.getInt(APP_PREFERENCES_SWEEP_DIRECTION, BottomTop);
-        maxcount = mSettings.getInt(APP_PREFERENCES_APP_COUNT, defaultInc) + 1;
-        iconCurPos = mSettings.getInt(APP_PREFERENCES_APP_ICON_SIZE, 0);
-        iconSize = iconSizeMin + iconSizeInc * iconCurPos;
-        iconOrder = mSettings.getInt(APP_PREFERENCES_APP_ORDER, 0) == 0;
-        applayout = mSettings.getInt(APP_PREFERENCES_APP_LAYOUT, applayout);
-        switch (applayout)
+    public Point getButtonPortraitPosition()
+    {
+        return new Point(buttonPortraitX, buttonPortraitY);
+    }
+
+    public Point getButtonLandscapePosition()
+    {
+        return new Point(buttonLandscapeX, buttonLandscapeY);
+    }
+    public Point getIconPanelPortraitPosition()
+    {
+        return new Point(iconPanelParams.x, iconPanelParams.y);
+    }
+
+    public void rotateScreen(int orientation)
+    {
+      //  Log.e("BUTTON", (butParams.x + butParams.width)+ " ");
+      //  Log.e("BUTTON", ((Math.floor((double) (oldX + butParams.width) / screenSize.y)) + " "));
+       // Log.e("BUTTON", (screenSize.y - butParams.width) + " ");
+      //  Log.e("BUTTON", (((Math.floor((double) (oldX + butParams.width) / screenSize.y)) * (screenSize.y - butParams.width))) + " ");
+        screenOrientation = orientation;
+        switch (screenOrientation)
         {
-            case VERTICAL:
-                appX = mSettings.getInt(APP_PREFERENCES_APP_X, appX) * (incX - (iconSize / pointCount));
-                appY = mSettings.getInt(APP_PREFERENCES_APP_Y, appY) * (incY - (iconSize * maxcount / pointCount));
+            case Configuration.ORIENTATION_PORTRAIT:
+                butParams.x = buttonPortraitX;
+                butParams.y = buttonPortraitY;
                 break;
-            case HORIZONTAL:
-                appX = mSettings.getInt(APP_PREFERENCES_APP_X, appX) * (incX - (iconSize * maxcount / pointCount));
-                appY = mSettings.getInt(APP_PREFERENCES_APP_Y, appY) * (incY - (iconSize / pointCount));
+            case Configuration.ORIENTATION_LANDSCAPE:
+                butParams.x = buttonLandscapeX;
+                butParams.y = buttonLandscapeY;
                 break;
         }
-        setAnim(applayout, 0);
-        appanim = mSettings.getInt(APP_PREFERENCES_APP_ANIM, appanim);
 
-
-
-        butParams = getLayoutParams(butX, butY, butWidth, butHeight);
-        initialiseIconPanel(true);
-    */
-
+        Log.e("BUTTON Portrait", buttonPortraitX + " " + buttonPortraitY);
+        Log.e("BUTTON Landscape", buttonLandscapeX + " " + buttonLandscapeY);
+        recycleViews();
+    }
+    public void setButtonColor(int color)
+    {
+        buttonView.setBackgroundColor(color);
+    }
 
 }

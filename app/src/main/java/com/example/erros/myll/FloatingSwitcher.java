@@ -8,6 +8,7 @@ import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.app.usage.UsageEvents;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
@@ -15,8 +16,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
@@ -28,6 +32,7 @@ import javax.inject.Inject;
 public class FloatingSwitcher extends Service implements ISwitcherService {
 
     private SharedPreferences mSettings;
+    private SharedPreferences.Editor mEditor;
     UsageStatsManager mUsageStatsManager;
     ActivityManager am;
 
@@ -40,15 +45,14 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
     //Constantsinc
     public  static final String ACTION_FINISH ="finish yourself, dickhead";
 
-    public  static final String ACTION_CHANGE_BUTTON_X ="change x, fucking asshole";
-    public  static final String ACTION_CHANGE_BUTTON_Y ="change y, fucking asshole";
+    public  static final String ACTION_ALLOW_DRAG_BUTTON ="ACTION_ALLOW_DRAG_BUTTON";
     public  static final String ACTION_CHANGE_BUTTON_WiDTH ="change width, fucking asshole";
     public  static final String ACTION_CHANGE_BUTTON_HEIGHT ="change height, fucking asshole";
-    public  static final String ACTION_CHANGE_BUTTON_SWEEPDIRECTION="sweep sweep";
+    public  static final String ACTION_CHANGE_BUTTON_SWEEPDIRECTION="ACTION_CHANGE_BUTTON_SWEEPDIRECTION";
+    public  static final String ACTION_CHANGE_BUTTON_COLOR = "ACTION_CHANGE_BUTTON_COLOR";
 
     public  static final String ACTION_APPS_VISIBILITY="ACTION_APPS_VISIBILITY";
-    public  static final String ACTION_CHANGE_APPS_X="appps xx xx";
-    public  static final String ACTION_CHANGE_APPS_Y="apppsyyy y y yyy";
+    public  static final String ACTION_ALLOW_DRAG_APPS ="ACTION_ALLOW_DRAG_APPS";
     public  static final String ACTION_CHANGE_APPS_COUNT ="apppsyyy y y yyy count";
     public  static final String ACTION_CHANGE_APPS_ICON_SIZE ="icon screenSize";
     public  static final String ACTION_CHANGE_APPS_ORDER ="ACTION_CHANGE_APPS_ORDER";
@@ -60,19 +64,24 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
 
     public static final String APP_PREFERENCES="switchersettings";
     public static final String APP_PREFERENCES_POINT_COUNT="switchersettings";
-    public static final String APP_PREFERENCES_BUTTON_X="buttonX";
-    public static final String APP_PREFERENCES_BUTTON_Y="buttonY";
+    public static final String APP_PREFERENCES_BUTTON_X_PORTRAIT ="APP_PREFERENCES_BUTTON_X_PORTRAIT";
+    public static final String APP_PREFERENCES_BUTTON_Y_PORTRAIT ="APP_PREFERENCES_BUTTON_Y_PORTRAIT";
+    public static final String APP_PREFERENCES_BUTTON_X_LANDSCAPE ="APP_PREFERENCES_BUTTON_X_LANDSCAPE";
+    public static final String APP_PREFERENCES_BUTTON_Y_LANDSCAPE ="APP_PREFERENCES_BUTTON_Y_LANDSCAPE";
     public static final String APP_PREFERENCES_BUTTON_WIDTH="buttonWidth";
     public static final String APP_PREFERENCES_BUTTON_HEIGHT="buttonHeight";
     public static final String APP_PREFERENCES_SWEEP_DIRECTION="sweepppdirectionsweep";
+    public static final String APP_PREFERENCES_BUTTON_COLOR="APP_PREFERENCES_BUTTON_COLOR";
 
     public static final String APP_PREFERENCES_APP_COUNT = "APP_PREFERENCES_APP_COUNT";
     public static final String APP_PREFERENCES_APP_ICON_SIZE = "APP_PREFERENCES_APP_ICON_SIZE";
     public static final String APP_PREFERENCES_APP_ORDER = "APP_PREFERENCES_APP_ORDER";
     public static final String APP_PREFERENCES_APP_LAYOUT = "APP_PREFERENCES_APP_LAYOUT";
     public static final String APP_PREFERENCES_APP_ANIM = "APP_PREFERENCES_APP_ANIM";
-    public static final String APP_PREFERENCES_APP_X = "APP_PREFERENCES_APP_X";
-    public static final String APP_PREFERENCES_APP_Y = "APP_PREFERENCES_APP_Y";
+    public static final String APP_PREFERENCES_APP_X_PORTRAIT = "APP_PREFERENCES_APP_X_PORTRAIT";
+    public static final String APP_PREFERENCES_APP_Y_PORTRAIT = "APP_PREFERENCES_APP_Y_PORTRAIT";
+    public static final String APP_PREFERENCES_APP_X_LANDSCAPE = "APP_PREFERENCES_APP_X_LANDSCAPE";
+    public static final String APP_PREFERENCES_APP_Y_LANDSCAPE = "APP_PREFERENCES_APP_Y_LANDSCAPE";
 
     int defaultSpinnerValue = 1;
     int defaultModeValue = 0;
@@ -86,6 +95,7 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
         //DaggerSwitcherComponent.builder().switcherModule(new SwitcherModule(getApplication())).build().inject(this);
 
         mSettings = getApplication().getSharedPreferences(FloatingSwitcher.APP_PREFERENCES, Context.MODE_PRIVATE);
+        mEditor = mSettings.edit();
         initialise();
         update();
     }
@@ -111,34 +121,40 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
         int pointCount = 20;
         int butWidth = 10;
         int butHeight = 10;
-        int butY = 10;
-        int butX = 10;
+        int butPortraitY = 10;
+        int butPortraitX = 10;
+        int butLandscapeY = 10;
+        int butLandscapeX = 10;
         int appY = 0;
         int appX = 0;
         int sweepDirection = 0;
         int iconSize = 0;
         int applayout = 0;
         int appAnim = 0;
+        int buttonColor = Color.TRANSPARENT;
         boolean appOrder = true;
         if(!mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT))
             return;
         pointCount = mSettings.getInt(APP_PREFERENCES_POINT_COUNT, pointCount);
         butWidth = mSettings.getInt(APP_PREFERENCES_BUTTON_WIDTH, butWidth);
         butHeight = mSettings.getInt(APP_PREFERENCES_BUTTON_HEIGHT, butHeight);
-        butY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y, butY);
-        butX = mSettings.getInt(APP_PREFERENCES_BUTTON_X, butX);
-        appY = mSettings.getInt(APP_PREFERENCES_APP_Y, appY);
-        appX = mSettings.getInt(APP_PREFERENCES_APP_X, appX);
+        butPortraitY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y_PORTRAIT, butPortraitY);
+        butPortraitX = mSettings.getInt(APP_PREFERENCES_BUTTON_X_PORTRAIT, butPortraitX);
+        butLandscapeY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y_LANDSCAPE, butLandscapeY);
+        butLandscapeX = mSettings.getInt(APP_PREFERENCES_BUTTON_X_LANDSCAPE, butLandscapeX);
+        appY = mSettings.getInt(APP_PREFERENCES_APP_Y_PORTRAIT, appY);
+        appX = mSettings.getInt(APP_PREFERENCES_APP_X_PORTRAIT, appX);
         sweepDirection = mSettings.getInt(APP_PREFERENCES_SWEEP_DIRECTION, sweepDirection);
 
         iconSize = mSettings.getInt(APP_PREFERENCES_APP_ICON_SIZE, iconSize);
         appOrder = mSettings.getInt(APP_PREFERENCES_APP_ORDER, 0) == 0;
         applayout = mSettings.getInt(APP_PREFERENCES_APP_LAYOUT, applayout);
         appAnim = mSettings.getInt(APP_PREFERENCES_APP_ANIM, appAnim);
-
+        buttonColor = mSettings.getInt(APP_PREFERENCES_BUTTON_COLOR, buttonColor);
 
         winContainer = new FloatingWindowContainer(this, this, windowManager, maxCount, pointCount,
-                applayout, appOrder, butWidth, butHeight, butX, butY, sweepDirection, iconSize, appX, appY, appAnim);
+                applayout, appOrder, butWidth, butHeight, butPortraitX, butPortraitY, butLandscapeX,
+                butLandscapeY, sweepDirection, iconSize, appX, appY, appAnim, getResources().getConfiguration().orientation, buttonColor);
     }
 
 
@@ -152,15 +168,21 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
                 winContainer.removeViews();
                 stopSelf();
             }
-            else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_X))
+            else  if( intent.getAction().contains(ACTION_ALLOW_DRAG_BUTTON))
             {
-                winContainer.changeButtonX(intent.getIntExtra(PARAM, defaultSpinnerValue));
+                boolean isDraggable = intent.getIntExtra(PARAM, defaultModeValue) == 1;
+                Log.e("BUTTON", isDraggable+"");
+                winContainer.dragFloatingButton(isDraggable);
+                if(!isDraggable) {
+                    saveWindowPositions();
+                }
             }
-            else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_Y))
+            else  if( intent.getAction().contains(ACTION_ALLOW_DRAG_APPS))
             {
-                 winContainer.changeButtonY(intent.getIntExtra(PARAM, defaultSpinnerValue));
+                winContainer.dragIconPanel(intent.getIntExtra(PARAM, defaultModeValue) == 1);
+                saveWindowPositions();
             }
-            else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_WiDTH))
+            else  if( intent.getAction().contains(ACTION_CHANGE_BUTTON_WiDTH))
             {
                 winContainer.changeButtonWidth(intent.getIntExtra(PARAM, defaultSpinnerValue));
             }else if( intent.getAction().contains(ACTION_CHANGE_BUTTON_HEIGHT))
@@ -171,13 +193,9 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
             {
                 winContainer.setSweepDirection(intent.getIntExtra(PARAM, defaultModeValue));
             }
-            else if(intent.getAction().equals(ACTION_CHANGE_APPS_X))
+            else if(intent.getAction().equals(ACTION_CHANGE_BUTTON_COLOR))
             {
-                winContainer.ChangeIconPanelX(intent.getIntExtra(PARAM, defaultSpinnerValue));
-            }
-            else if(intent.getAction().equals(ACTION_CHANGE_APPS_Y))
-            {
-                winContainer.ChangeIconPanelY(intent.getIntExtra(PARAM, defaultSpinnerValue));
+                winContainer.setButtonColor(intent.getIntExtra(PARAM, defaultModeValue));
             }
             else if(intent.getAction().equals(ACTION_CHANGE_APPS_COUNT))
             {
@@ -227,6 +245,8 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
         // get usage stats for the last 10 seconds
         int minutes = 5;
         List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * minutes, currentTime);
+        UsageEvents usageEvents = mUsageStatsManager.queryEvents(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * minutes, currentTime);
+        usageEvents.
         int period = minutes;
         while(stats.size() < appSwither.getMaxCount()){
             period *= minutes;
@@ -319,24 +339,26 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
         //winContainer.removeViews();
         //createWindowContainer(appSwither.getMaxCount());
         winContainer.updateScreenSize();
+        final int orientation = newConfig.orientation;
         Thread thread = new Thread() {
             @Override
             public void run() {
                 try {
 
-                        sleep(500);
-                        int butY = 10;
+                        sleep(300);
+                       /* int butY = 10;
                         int butX = 10;
                         int appY = 0;
                         int appX = 0;
-                        butY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y, butY);
-                        butX = mSettings.getInt(APP_PREFERENCES_BUTTON_X, butX);
-                        appY = mSettings.getInt(APP_PREFERENCES_APP_Y, appY);
-                        appX = mSettings.getInt(APP_PREFERENCES_APP_X, appX);
+                        butY = mSettings.getInt(APP_PREFERENCES_BUTTON_Y_PORTRAIT, butY);
+                        butX = mSettings.getInt(APP_PREFERENCES_BUTTON_X_PORTRAIT, butX);
+                        appY = mSettings.getInt(APP_PREFERENCES_APP_Y_PORTRAIT, appY);
+                        appX = mSettings.getInt(APP_PREFERENCES_APP_X_PORTRAIT, appX);
                         winContainer.changeButtonX(butX);
                         winContainer.changeButtonY(butY);
                         winContainer.ChangeIconPanelX(appX);
-                        winContainer.ChangeIconPanelY(appY);
+                        winContainer.ChangeIconPanelY(appY);*/
+                    winContainer.rotateScreen(orientation);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -346,6 +368,19 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
 
         thread.start();
 
+    }
+    private void saveWindowPositions()
+    {
+        Point pos = winContainer.getButtonPortraitPosition();
+        mEditor.putInt(APP_PREFERENCES_BUTTON_X_PORTRAIT, pos.x);
+        mEditor.putInt(APP_PREFERENCES_BUTTON_Y_PORTRAIT, pos.y);
+        pos = winContainer.getButtonLandscapePosition();
+        mEditor.putInt(APP_PREFERENCES_BUTTON_X_LANDSCAPE, pos.x);
+        mEditor.putInt(APP_PREFERENCES_BUTTON_Y_LANDSCAPE, pos.y);
+        pos = winContainer.getIconPanelPortraitPosition();
+        mEditor.putInt(APP_PREFERENCES_APP_X_PORTRAIT, pos.x);
+        mEditor.putInt(APP_PREFERENCES_APP_Y_PORTRAIT, pos.y);
+        mEditor.apply();
     }
 
 }

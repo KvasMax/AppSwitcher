@@ -23,18 +23,14 @@
             android:textOn="Вкл"
             android:layout_gravity="right" />
 
-        <SeekBar
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:id="@+id/xpanel"
-            android:max="20"
-            />
-        <SeekBar
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:id="@+id/ypanel"
-            android:max="20"
-            />
+        <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/drag_floating_button"
+            android:id="@+id/dragFloatindButton"
+            android:textOff="Off"
+            android:textOn="On"
+            android:layout_gravity="left" />
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -47,23 +43,33 @@
             android:id="@+id/heightpanel"
             android:max="20"
             />
-
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+        <Button
+            android:id="@+id/butChooseColor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_color"/>
+        <Button
+            android:id="@+id/butTransparentColor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/choose_transparent_color"/>
+        </LinearLayout>
         <Spinner
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/SweepDirection" />
-        <SeekBar
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:id="@+id/xAppPanel"
-            android:max="20"
-            />
-        <SeekBar
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:id="@+id/yAppPanel"
-            android:max="20"
-            />
+        <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/drag_app_panel"
+            android:id="@+id/dragAppPanel"
+            android:textOff="Off"
+            android:textOn="on"
+            android:layout_gravity="left" />
         <SeekBar
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
