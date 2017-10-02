@@ -1,9 +1,9 @@
-package com.example.erros.myll.di.modules;
+package com.erros.kvasmax.switcher.di.modules;
 
 import android.app.Application;
 import android.content.pm.PackageManager;
 
-import com.example.erros.myll.SwitcherContainer;
+import com.erros.kvasmax.switcher.SwitcherContainer;
 
 import dagger.Module;
 import dagger.Provides;

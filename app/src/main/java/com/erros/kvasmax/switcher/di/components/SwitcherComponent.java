@@ -1,10 +1,8 @@
-package com.example.erros.myll.di.components;
+package com.erros.kvasmax.switcher.di.components;
 
-import android.app.Service;
-
-import com.example.erros.myll.FloatingSwitcher;
-import com.example.erros.myll.SwitcherContainer;
-import com.example.erros.myll.di.modules.SwitcherModule;
+import com.erros.kvasmax.switcher.FloatingSwitcher;
+import com.erros.kvasmax.switcher.SwitcherContainer;
+import com.erros.kvasmax.switcher.di.modules.SwitcherModule;
 
 import dagger.Component;
 

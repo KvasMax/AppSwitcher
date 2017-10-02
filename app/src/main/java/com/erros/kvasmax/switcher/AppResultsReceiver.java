@@ -1,4 +1,4 @@
-package com.example.erros.myll;
+package com.erros.kvasmax.switcher;
 
 
 import android.os.Bundle;

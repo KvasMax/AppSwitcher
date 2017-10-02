@@ -1,6 +1,7 @@
-package com.example.erros.myll;
+package com.erros.kvasmax.switcher;
 
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -13,13 +14,15 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.SwitchCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,17 +31,18 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorSelectedListener;
 import com.flask.colorpicker.builder.ColorPickerClickListener;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.NativeExpressAdView;
 
 public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
@@ -53,9 +57,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     private Spinner appOrder;
     private Spinner appLayout;
     private Spinner appAnim;
-    private Switch OnOff;
-    private Switch dragButton;
-    private Switch dragAppPanel;
+    private SwitchCompat OnOff;
+    private SwitchCompat dragButton;
+    private SwitchCompat dragAppPanel;
+    private SwitchCompat enableAnimation;
     private boolean onoff;
 
     private Button chooseColor;
@@ -73,6 +78,8 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     public LinearLayout ll;
 
     int defaultCoor=10;
+
+    int touchCount = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -94,6 +101,23 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         mSettings = getActivity().getSharedPreferences(FloatingSwitcher.APP_PREFERENCES, Context.MODE_PRIVATE);
         mEditor= mSettings.edit();
 
+
+        NativeExpressAdView adView =
+                v.findViewById(R.id.adViewTop);
+        adView.loadAd(new AdRequest.Builder()
+                .addTestDevice("2EF0BBC16E5B4F63573C3867F95EC667")
+                .build());
+
+       // adView = v.findViewById(R.id.adViewBottom);
+       // adView.loadAd(new AdRequest.Builder().addTestDevice("33BE2250B43518CCDA7DE426D04EE232").build());
+
+        AdView mAdView = (AdView) v.findViewById(R.id.adViewBottom);
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("2EF0BBC16E5B4F63573C3867F95EC667")
+                .build();
+        mAdView.loadAd(adRequest);
+
+
         widhtChange=(SeekBar) v.findViewById(R.id.widthpanel);
         heightChange=(SeekBar) v.findViewById(R.id.heightpanel);
 
@@ -106,8 +130,8 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         WindowManager windowManager = (WindowManager)getActivity().getSystemService(getActivity().WINDOW_SERVICE);
         Point size = new Point();
         windowManager.getDefaultDisplay().getSize(size);
-        FrameLayout top = (FrameLayout) v.findViewById(R.id.topPadding);
-        FrameLayout bottom = (FrameLayout) v.findViewById(R.id.bottomPadding);
+        LinearLayout top = (LinearLayout) v.findViewById(R.id.topPadding);
+        LinearLayout bottom = (LinearLayout) v.findViewById(R.id.bottomPadding);
         ViewGroup.LayoutParams params =  top.getLayoutParams();
         offset = size.y;
         params.height = offset;
@@ -150,21 +174,33 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         AppCount.setOnSeekBarChangeListener(seeklistener);
         AppIconSize.setOnSeekBarChangeListener(seeklistener);
 
-        dragButton = (Switch)v.findViewById(R.id.dragFloatindButton);
+        dragButton = (SwitchCompat)v.findViewById(R.id.dragFloatindButton);
         dragButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_BUTTON, isChecked ? 1 : 0);
+                showOnConditionAd();
             }
         });
 
-        dragAppPanel = (Switch)v.findViewById(R.id.dragAppPanel);
+        dragAppPanel = (SwitchCompat)v.findViewById(R.id.dragAppPanel);
         dragAppPanel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_APPS, isChecked ? 1 : 0);
+                showOnConditionAd();
+            }
+        });
+
+        enableAnimation = (SwitchCompat)v.findViewById(R.id.enableAnimation);
+        enableAnimation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                sendParam(FloatingSwitcher.ACTION_LAUNCH_ANIMATION_ENABLE, isChecked ? 1 : 0);
+                showOnConditionAd();
             }
         });
 
@@ -180,6 +216,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_SWEEPDIRECTION, position);
+                showOnConditionAd();
             }
 
         @Override
@@ -195,6 +232,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ORDER, position);
+                showOnConditionAd();
             }
 
             @Override
@@ -219,6 +257,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                         appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
                         break;
                 }
+                showOnConditionAd();
             }
 
             @Override
@@ -232,6 +271,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ANIM, position);
+                showOnConditionAd();
             }
 
             @Override
@@ -240,7 +280,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             }
         });
 
-        OnOff=(Switch)v.findViewById(R.id.startService);
+        OnOff = (SwitchCompat)v.findViewById(R.id.startService);
         OnOff.setChecked(onoff=isMyServiceRunning(FloatingSwitcher.class));
         OnOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -248,8 +288,50 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
                 if (isChecked)
                     if(checkPermissions()) {
-                        saveSettings();
-                        getActivity().startService(new Intent(getActivity(), FloatingSwitcher.class));
+                        boolean areNotificationsEnabled = false;
+                        if(Build.VERSION.SDK_INT > 23) {
+                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getContext());
+                            areNotificationsEnabled = notificationManager.areNotificationsEnabled();
+                        }
+                            saveSettings();
+                            getActivity().startService(new Intent(getActivity().getBaseContext(), FloatingSwitcher.class));
+                            if(!isFirstLaunch())
+                            {
+                                ((MainActivity)getActivity()).showAd();
+                            }
+                        if(areNotificationsEnabled) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                            builder.setTitle(R.string.title_notification);
+                            builder.setMessage(R.string.message_hide_notifications);
+                            builder.setCancelable(true);
+                            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+
+                                }
+                            });
+                            builder.setPositiveButton(R.string.button_hide, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    /*Uri uri = Uri.fromParts("package", getActivity().getPackageName(), null);
+                                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(uri);
+                                    startActivity(intent);*/
+                                    Intent intent = new Intent();
+                                    intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+
+                                    //for Android 5-7
+                                    intent.putExtra("app_package", getActivity().getPackageName());
+                                    intent.putExtra("app_uid", getActivity().getApplicationInfo().uid);
+
+                                    // for Android O
+                                    intent.putExtra("android.provider.extra.APP_PACKAGE", getActivity().getPackageName());
+
+                                    startActivity(intent);
+                                }
+                            });
+
+                            builder.create().show();
+                        }
                     } else {
                         isChecked = false;
                         buttonView.setChecked(isChecked);
@@ -257,8 +339,9 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 else {
                     saveSettings();
                     sendParam(FloatingSwitcher.ACTION_FINISH, 666);
+                    ((MainActivity)getActivity()).showAd();
                 }
-                onoff=isChecked;
+                onoff = isChecked;
             }
         });
 
@@ -285,6 +368,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
                                 mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
                                 mEditor.apply();
+                                showOnConditionAd();
                             }
                         })
                         .setNegativeButton(getResources().getString(R.string.button_cancel), new DialogInterface.OnClickListener() {
@@ -303,6 +387,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
                 mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
                 mEditor.apply();
+                showOnConditionAd();
             }
         });
 
@@ -345,8 +430,16 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
          if(resultCode==0);
     }
 
+    private boolean isFirstLaunch()
+    {
+        return mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT);
+    }
+
     private void loadSettings(){
-        if(!mSettings.contains(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT)) return;
+        if(!isFirstLaunch()) {
+            ((MainActivity)getActivity()).showTip();
+            return;
+        }
         widhtChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_WIDTH, defaultCoor));
         heightChange.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_HEIGHT, defaultCoor));
         AppCount.setProgress(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_COUNT, defaultCoor));
@@ -364,6 +457,9 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 break;
         }
         appAnim.setSelection(mSettings.getInt(FloatingSwitcher.APP_PREFERENCES_APP_ANIM, 0));
+        enableAnimation.setChecked(mSettings.getBoolean(FloatingSwitcher.APP_PREFERENCES_APP_USE_ANIMATION, true));
+        dragButton.setChecked(mSettings.getBoolean(FloatingSwitcher.ACTION_ALLOW_DRAG_BUTTON, false));
+        dragAppPanel.setChecked(mSettings.getBoolean(FloatingSwitcher.ACTION_ALLOW_DRAG_APPS, false));
     }
     private void saveSettings(){
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_POINT_COUNT, widhtChange.getMax());
@@ -375,6 +471,9 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
         mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
+        mEditor.putBoolean(FloatingSwitcher.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
+        mEditor.putBoolean(FloatingSwitcher.ACTION_ALLOW_DRAG_BUTTON, dragButton.isChecked());
+        mEditor.putBoolean(FloatingSwitcher.ACTION_ALLOW_DRAG_APPS, dragAppPanel.isChecked());
 
         mEditor.apply();
     }
@@ -443,12 +542,14 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         } else {
 
         }*/
+        Log.e("check", "check");
         boolean granted = true;
         if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         {
             requestPermission(Settings.ACTION_USAGE_ACCESS_SETTINGS, false, getActivity().getResources().getString(R.string.usage_access_permission), USAGE_ACCESS_PERMISSION_REQUEST_CODE);
             granted = false;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getActivity()))
+        }
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(getActivity()))
         {
             requestPermission(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, false, getActivity().getResources().getString(R.string.overlay_permission), PERMISSION_REQUEST_CODE);
             granted = false;
@@ -457,48 +558,61 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
     }
 
-    private void requestPermission(final String permission, final boolean newMethod, final String message, final int requestCode)
+    private void requestPermission(String permission, boolean newMethod, String message, int requestCode)
     {
         if(permissionIsGranted(permission))
             return;
 
         if(newMethod) {
-            if (shouldShowRequestPermissionRationale(
-                    permission))
+            if (shouldShowRequestPermissionRationale(permission))
             {
                 //final String message = "Usage access permission is needed to get a list of running apps";
-                Snackbar.make(ll, message, Snackbar.LENGTH_LONG)
-                        .setAction("GRANT", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                sendPermissionRequest(permission, newMethod, requestCode);
-                            }
-                        })
-                        .show();
+                showPermissionDialog(permission, newMethod, message, requestCode);
 
             } else {
 
                 sendPermissionRequest(permission, newMethod, requestCode);
             }
         } else {
+            showPermissionDialog(permission, newMethod, message, requestCode);
                 // = "Usage access permission is needed to get a list of running apps";
-                Snackbar.make(ll, message, Snackbar.LENGTH_LONG)
-                        .setAction("GRANT", new View.OnClickListener() {
+              /*  Snackbar.make(ll, message, Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.grant), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 sendPermissionRequest(permission, newMethod, requestCode);
                             }
                         })
-                        .show();
+                        .show();*/
             }
 
 
     }
 
+    private void showPermissionDialog(final String permission, final boolean newMethod, String message, final int requestCode)
+    {
+        Log.e("permission", permission);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage(message);
+        builder.setCancelable(true);
+        builder.setPositiveButton(R.string.grant, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                sendPermissionRequest(permission, newMethod, requestCode);
+            }
+        });
+        builder.setNegativeButton(R.string.button_cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        });
+        builder.create().show();
+    }
+
     @Override
     public void onStart() {
         super.onStart();
-        checkPermissions();
     }
 
     @Override
@@ -518,6 +632,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 }
             }
         }*/
+        Log.e("onActivityResult", "onActivityResult");
         checkPermissions();
     }
 
@@ -533,6 +648,14 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         if (background instanceof ColorDrawable)
             color = ((ColorDrawable) background).getColor();
         return color;
+    }
+
+    private void showOnConditionAd()
+    {
+        touchCount++;
+        if(touchCount % 10 == 0) {
+            ((MainActivity) getActivity()).showAd();
+        }
     }
 }
 

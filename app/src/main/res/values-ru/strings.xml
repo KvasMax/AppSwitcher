@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">One swipe to switch</string>
+    <string name="unit_id">ca-app-pub-5616229813369025~2393725405</string>
+    <string name="ad_fullscreen">ca-app-pub-5616229813369025/5543467076</string>
+    <string name="ad_native1">ca-app-pub-5616229813369025/2657626899</string>
+    <string name="ad_native2">ca-app-pub-5616229813369025/4027506745</string>
+    <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
+    <string name="allow_drag">Разрешить перетаскивание</string>
+    <string name="transition_animation">Анимация перехода между приложениями</string>
+    <string name="choose_color">Выбрать цвет</string>
+    <string name="choose_transparent_color">Установить прозрачный фон</string>
+    <string name="button_ok">OK</string>
+    <string name="button_cancel">Отмена</string>
+    <string name="on">Вкл</string>
+    <string name="off">Выкл</string>
+    <string name="button_hide">Скрыть</string>
+    <string name="start_service">Запусr</string>
+    <string name="grant">Разрешить</string>
+    <string name="lackOfApps">Недостаточно недавно запущенных приложений</string>
+    <string-array name="sweepdirection">
+        <item>Снизу вверх</item>
+        <item>Справо на лево</item>
+        <item>Сверху вниз</item>
+        <item>Слево на право</item>
+    </string-array>
+    <string-array name="apporder">
+    <item>Прямой</item>
+    <item>Обратный</item>
+</string-array>
+    <string-array name="applayout">
+        <item>Вертикальный</item>
+        <item>Горизонтальный</item>
+    </string-array>
+    <string-array name="app_ver_anim">
+        <item>Справо налево</item>
+        <item>Слево напрво</item>
+    </string-array>
+    <string-array name="app_hor_anim">
+        <item>Снизу вверх</item>
+        <item>Сверху вниз</item>
+    </string-array>
+    <string name="usage_access_permission">История использования необходима для просмотра недавних приложений</string>
+    <string name="overlay_permission">Наложение поверх окон необходимо для отображения плавающей кнопки</string>
+    <string name="message_hide_notifications">Данному приложению для того, чтобы оставаться работать в фоне, необходимо отображение уведомления. Его можно скрыть путем удержания на нем пальца и выбора пункта "Блокировать все уведомления"</string>
+    <string name="title_notification">Уведомление</string>
+    <string name="floating_button">Плавающая кнопка</string>
+    <string name="floating_button_sweep_direction">Направление свайпа по плавающей кнопке</string>
+    <string name="app_bar">Панель приложений</string>
+    <string name="width_param">Ширина</string>
+    <string name="height_param">Высота</string>
+    <string name="app_count">Количество приложений</string>
+    <string name="app_icon_size">Размер иконки приложений</string>
+    <string name="app_order">Порядок приложений</string>
+    <string name="app_layout">Порядок размещения приложений</string>
+    <string name="app_appear_animation">Анимация появления списка приложений</string>
+    <string name="how_to_use">Как использовать</string>
+    <string name="how_to_use_explanation">Часть приложения, которая выполняет переключение между приложениями, состоит из двух частей: плавающая кнопка и панель приложений. Для того, чтобы появилась панель приложений, необходимо дотронуться до плавающей кнопки и сдвинуть палец в направлении, которое указано в настройках приложения. Для переключения между приложениями необходимо отобразить панель приложений, затем довести палец до появившейся иконки приложения и убрать его.</string>
+</resources>

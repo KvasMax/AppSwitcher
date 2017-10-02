@@ -1,4 +1,4 @@
-package com.example.erros.myll;
+package com.erros.kvasmax.switcher;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,14 +37,14 @@ public class FloatingWindowContainer {
     private Context context;
     private ISwitcherService service;
 
-    // touch panel
+    // touch button
     private ImageView buttonView;
     private WindowManager.LayoutParams butParams;
 
-    // iconViews panel
+    // iconViews
     private LinearLayout iconContainer;
     private ArrayList<ImageView> iconViews;
-    private WindowManager.LayoutParams iconPanelParams;
+    private WindowManager.LayoutParams iconBarParams;
 
     private ImageView backgroundView;
     private WindowManager.LayoutParams backgroundParams;
@@ -72,12 +71,12 @@ public class FloatingWindowContainer {
 
 
     private boolean iconOrder;
-    private int iconPanelLayout;
+    private int iconBarLayout;
     private int iconAnim;
 
-    public boolean iconPanelIsVisible = true;
+    public boolean iconBarIsVisible = true;
     private boolean isDraggableFloatingButton = false;
-    private boolean isDraggableIconPanel = false;
+    private boolean isDraggableIconBar = false;
 
     private int screenOrientation;
     private int buttonPortraitX;
@@ -86,12 +85,15 @@ public class FloatingWindowContainer {
     private int buttonLandscapeY;
     private int buttonColor = Color.TRANSPARENT;
 
+    int distanceX;
+    int distanceY;
+
     private int statusBarHeight = 0;
 
     public FloatingWindowContainer(Context context,ISwitcherService service, WindowManager windowManager, int maxCount,
                                    int pointCount, int iconLayout, boolean iconOrder, int buttonWidth, int buttonHeight,
                                    int buttonPortraitX, int buttonPortraitY, int buttonLandscapeX, int buttonLandscapeY,
-                                   int sweepDirection, int iconSize, int iconPanelX, int iconPanelY, int iconAnim, int buttonOrientation, int buttonColor)
+                                   int sweepDirection, int iconSize, int distanceX, int distanceY, int iconAnim, int buttonOrientation, int buttonColor)
     {
         this.context = context;
         this.service = service;
@@ -99,7 +101,7 @@ public class FloatingWindowContainer {
         this.pointCount = pointCount;
         this.maxCount = maxCount;
         this.iconOrder = iconOrder;
-        this.iconPanelLayout = iconLayout;
+        this.iconBarLayout = iconLayout;
         this.sweepDirection = sweepDirection;
         this.screenOrientation = buttonOrientation;
         this.buttonPortraitX = buttonPortraitX;
@@ -117,23 +119,20 @@ public class FloatingWindowContainer {
         }
         initialiseBackground();
         initialiseButton(buttonView, butParams, buttonHeight, buttonWidth);
-        initialiseIconPanel(true, iconPanelX, iconPanelY);
-        initialiseFullScreenDetector();
-
+        initialiseIconBar(true, distanceX, distanceY);
+        calculateDistance();
     }
     private void calculateIncs()
     {
         incX = screenSize.x / pointCount + 1;
         incY = screenSize.y / pointCount - 1;
-        incWidth = incHeight = Math.max(screenSize.y, screenSize.x) / 2 / pointCount;
+        incWidth = incHeight = Math.min(screenSize.y, screenSize.x) / pointCount;
         iconSizeMin = Math.max(screenSize.y, screenSize.x) / 20;
         int iconSizeMax = Math.max(screenSize.y, screenSize.x) / 8;
-        iconSizeInc = (iconSizeMax - iconSizeMin) / 20;
-
+        iconSizeInc = (int)Math.ceil((double)(iconSizeMax - iconSizeMin) / pointCount);
     }
-    private void initialiseIconPanel(boolean newpanel, int iconPanelX, int iconPanelY)
+    private void initialiseIconBar(boolean isNewBar, int distanceX, int distanceY)
     {
-        // new panel is new then iconPanelX and iconPanelY is the values of Spinners else it is the real position on the scren
 
         iconViews = new ArrayList<ImageView>();
         for(int i=0; i < maxCount; i++){
@@ -145,10 +144,10 @@ public class FloatingWindowContainer {
         }
         else {
             iconContainer = new LinearLayout(context);
-            iconContainer.setOrientation( iconPanelLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL );
+            iconContainer.setOrientation( iconBarLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL );
         }
 
-        if(iconPanelIsVisible) {
+        if(iconBarIsVisible) {
             iconContainer.setVisibility(View.VISIBLE);
             iconContainer.setBackgroundColor(Color.BLUE);
         }
@@ -169,9 +168,9 @@ public class FloatingWindowContainer {
                 width = iconSize;
                 break;
         }
-        int appX = iconPanelX, appY = iconPanelY;
+        int appX = butParams.x - distanceX, appY = butParams.y - distanceY;
       /*  if(newpanel) {
-            switch (iconPanelLayout) {
+            switch (iconBarLayout) {
                 case VERTICAL:
                     appX = iconPanelX * (incX - (iconSize / pointCount));
                     appY = iconPanelY * (incY - (iconSize * maxCount / pointCount));
@@ -183,22 +182,22 @@ public class FloatingWindowContainer {
             }
         }*/
 
-        if(appX + width > screenSize.x)
+     /*   if(appX + width > screenSize.x)
         {
             appX = screenSize.x - width;
         }
         if(appY + height > screenSize.y)
         {
             appY = screenSize.y - height;
-        }
+        }*/
 
-        iconPanelParams = getLayoutParams(appX, appY, width, height );
+        iconBarParams = getLayoutParams(appX, appY, width, height );
 
         for(ImageView image: iconViews) {
             iconContainer.addView(image,new LinearLayout.LayoutParams(iconSize, iconSize));
         }
-        if(newpanel) {
-            windowManager.addView(iconContainer, iconPanelParams);
+        if(isNewBar) {
+            windowManager.addView(iconContainer, iconBarParams);
             iconContainer.setOnTouchListener(new View.OnTouchListener() {
                 private int initialX;
                 private int initialY;
@@ -208,18 +207,19 @@ public class FloatingWindowContainer {
                 public boolean onTouch(View view, MotionEvent event) {
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
-                            initialX = iconPanelParams.x;
-                            initialY = iconPanelParams.y;
+                            initialX = iconBarParams.x;
+                            initialY = iconBarParams.y;
                             initialTouchX = event.getRawX();
                             initialTouchY = event.getRawY();
                             break;
                         case MotionEvent.ACTION_UP:
-
+                            calculateDistance();
+                            service.saveWindowPositions();
                             break;
                         case MotionEvent.ACTION_MOVE:
-                            if(isDraggableIconPanel) {
-                                iconPanelParams.x = initialX - (int) (initialTouchX - event.getRawX());
-                                iconPanelParams.y = initialY - (int) (initialTouchY - event.getRawY());
+                            if(isDraggableIconBar) {
+                                iconBarParams.x = initialX - (int) (initialTouchX - event.getRawX());
+                                iconBarParams.y = initialY - (int) (initialTouchY - event.getRawY());
                                 recycleViews();
                             }
                             break;
@@ -229,6 +229,10 @@ public class FloatingWindowContainer {
             });
         }
         else recycleViews();
+    }
+    private void calculateDistance() {
+        distanceX = butParams.x - iconBarParams.x;
+        distanceY = butParams.y - iconBarParams.y;
     }
     private void initialiseBackground()
     {
@@ -241,7 +245,45 @@ public class FloatingWindowContainer {
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        backgroundParams = getLayoutParams(0, 0, fullScreenSize.x, fullScreenSize.y);
+        backgroundParams = getLayoutParams(0, 0, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+        backgroundView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+        @Override
+        public void onSystemUiVisibilityChange(int i) {
+         /*   Log.e("SCREEN", screenSize.x + " " + screenSize.y);
+            Log.e("SCREEN", fullScreenSize.x + " " + fullScreenSize.y);
+            Log.e("BUTTON POS", butParams.x + " " + butParams.y);
+            Log.e("BUTTON PARAM", butParams.width + " " + butParams.height);*/
+
+            if( i == 0)
+            {
+                switch (screenOrientation)
+                {
+                    case Configuration.ORIENTATION_PORTRAIT:
+                        butParams.x = buttonPortraitX;
+                        butParams.y = buttonPortraitY;
+                        break;
+                    case Configuration.ORIENTATION_LANDSCAPE:
+                        butParams.x = buttonLandscapeX;
+                        butParams.y = buttonLandscapeY;
+                        break;
+                }
+            } else {
+                if(butParams.x + butParams.width == screenSize.x)
+                {
+                    butParams.x += fullScreenSize.x - screenSize.x;
+                }
+                if(butParams.y + butParams.height == screenSize.y)
+                {
+                    butParams.y += fullScreenSize.y - screenSize.y;
+                } else if( butParams.y != 0){
+                    butParams.y += statusBarHeight;
+                }
+            }
+            iconBarParams.x = butParams.x - distanceX;
+            iconBarParams.y = butParams.y - distanceY;
+            recycleViews();
+        }
+    });
         windowManager.addView(backgroundView, backgroundParams);
         hideBackground();
     }
@@ -286,7 +328,7 @@ public class FloatingWindowContainer {
                                     && initialTouchY < location[1] + height) {
 
                                 int numIcon = 0, perIcon = 0;
-                                switch (iconPanelLayout) {
+                                switch (iconBarLayout) {
                                     case VERTICAL:
                                         perIcon = height / iconViews.size();
                                         numIcon = (int) (height - (initialTouchY - location[1])) / perIcon;
@@ -302,61 +344,69 @@ public class FloatingWindowContainer {
                             }
                             visible = false;
                         } else {
+                            roundPosition();
                             switch (screenOrientation)
                             {
                                 case Configuration.ORIENTATION_PORTRAIT:
-                                    roundPosition();
                                     buttonPortraitX = butParams.x;
                                     buttonPortraitY = butParams.y;
-                                    buttonLandscapeX = (int)Math.ceil(((double) (buttonPortraitX + butParams.width) / screenSize.x) * screenSize.y - butParams.width);
-                                    buttonLandscapeY = (int)Math.ceil(((double)(buttonPortraitY + butParams.height) / screenSize.y) * screenSize.x - butParams.height);
+                                    buttonLandscapeX = (int)Math.ceil(((double)(buttonPortraitX ) / (screenSize.x - butParams.width)) * (screenSize.y - butParams.width));
+                                    buttonLandscapeY = (int)Math.ceil(((double)(buttonPortraitY ) / (screenSize.y - butParams.height)) * (screenSize.x - butParams.height));
                                     break;
                                 case Configuration.ORIENTATION_LANDSCAPE:
-                                    roundPosition();
                                     buttonLandscapeX = butParams.x;
                                     buttonLandscapeY = butParams.y;
-                                    buttonPortraitX = (int)Math.ceil(((double) (buttonLandscapeX + butParams.width) / screenSize.x) * screenSize.y - butParams.width);
-                                    buttonPortraitY = (int)Math.ceil(((double)(buttonLandscapeY + butParams.height) / screenSize.y) * screenSize.x - butParams.height);
+                                    buttonPortraitX = (int)Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - butParams.width)) * (screenSize.y - butParams.width));
+                                    buttonPortraitY = (int)Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - butParams.height)) * (screenSize.x - butParams.height));
                                     break;
                             }
+                         //   Log.e("PORTRAIT", buttonPortraitX + " " + buttonPortraitY);
+                          //  Log.e("LANDSCAPE", buttonLandscapeX + " " + buttonLandscapeY);
+
+                            service.saveWindowPositions();
                         }
                         break;
                     case MotionEvent.ACTION_MOVE:
                         if(!isDraggableFloatingButton) {
-                            boolean doIt = false;
-                            switch (sweepDirection) {
-                                case BottomTop:
-                                    if (initialTouchY - event.getRawY() > screenSize.y * 0.05 && !visible) {
-                                        doIt = true;
-                                    }
-                                    break;
-                                case TopBottom:
-                                    if (event.getRawY() - initialTouchY > screenSize.y * 0.05 && !visible) {
-                                        doIt = true;
-                                    }
-                                    break;
-                                case RightLeft:
-                                    if (initialTouchX - event.getRawX() > screenSize.x * 0.05 && !visible) {
-                                        doIt = true;
-                                    }
-                                    break;
-                                case LeftRight:
-                                    if (event.getRawX() - initialTouchX > screenSize.x * 0.05 && !visible) {
-                                        doIt = true;
-                                    }
-                                    break;
-                                default:
-                                    sweepDirection = BottomTop;
-                                    break;
-                            }
-                            if (doIt) {
-                                service.updateAppList();
-                                iconContainer.setVisibility(View.VISIBLE);
-                                showBackground();
-                                for (ImageView im : iconViews) {
-                                    im.startAnimation(firstAnim);
+                            if(!visible) {
+                                int[] location = new int[2];
+                                buttonView.getLocationOnScreen(location);
+                                boolean doIt = false;
+                                switch (sweepDirection) {
+                                    case BottomTop:
+                                        if (event.getRawY() < location[1]) {
+                                            doIt = true;
+                                        }
+                                        break;
+                                    case TopBottom:
+                                        if (event.getRawY() > location[1] + butParams.height) {
+                                            doIt = true;
+                                        }
+                                        break;
+                                    case RightLeft:
+                                        if (event.getRawX() < location[0]) {
+                                            doIt = true;
+                                        }
+                                        break;
+                                    case LeftRight:
+                                        if (event.getRawX() > location[0] + butParams.width) {
+                                            doIt = true;
+                                        }
+                                        break;
+                                    default:
+                                        sweepDirection = BottomTop;
+                                        break;
                                 }
-                                visible = true;
+
+                                if (doIt) {
+                                    service.updateAppList();
+                                    iconContainer.setVisibility(View.VISIBLE);
+                                    showBackground();
+                                    for (ImageView im : iconViews) {
+                                        im.startAnimation(firstAnim);
+                                    }
+                                    visible = true;
+                                }
                             }
                         }
                         else {
@@ -379,8 +429,8 @@ public class FloatingWindowContainer {
                 return false;
             }
         });
-        int butWidth = calculateWidth(width);
-        int butHeight = calculateHeight(height);
+        int butWidth = calculateWidth(width + 1);
+        int butHeight = calculateHeight(height + 1);
         //int butX = calculateX(butWidth, x);
        // int butY = calculateY(butHeight, y);
         switch (screenOrientation)
@@ -410,53 +460,9 @@ public class FloatingWindowContainer {
             butParams.y = screenSize.y - butParams.height;
         }
     }
-    private void initialiseFullScreenDetector()
-    {
-        LinearLayout fullScreenDetectorView = new LinearLayout(context);
-        WindowManager.LayoutParams fullScreenDetectorParams = getLayoutParams(0 ,0, WindowManager.LayoutParams.MATCH_PARENT, 0);
-        fullScreenDetectorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
-            @Override
-            public void onSystemUiVisibilityChange(int i) {
-                Log.e("SCREEN", screenSize.x + " " + screenSize.y);
-                Log.e("SCREEN", fullScreenSize.x + " " + fullScreenSize.y);
-                Log.e("BUTTON POS", butParams.x + " " + butParams.y);
-                Log.e("BUTTON PARAM", butParams.width + " " + butParams.height);
 
-                if( i == 0)
-                {
-                    switch (screenOrientation)
-                    {
-                        case Configuration.ORIENTATION_PORTRAIT:
-                            butParams.x = buttonPortraitX;
-                            butParams.y = buttonPortraitY;
-                            break;
-                        case Configuration.ORIENTATION_LANDSCAPE:
-                            butParams.x = buttonLandscapeX;
-                            butParams.y = buttonLandscapeY;
-                            break;
-                    }
-                } else {
-                    if(butParams.x + butParams.width == screenSize.x)
-                    {
-                        butParams.x += fullScreenSize.x - screenSize.x;
-                        Log.e("FULL", "EXPAND X");
-                    }
-                    if(butParams.y + butParams.height == screenSize.y)
-                    {
-                        butParams.y += fullScreenSize.y - screenSize.y;
-                        Log.e("FULL", "EXPAND Y");
-                    } else if( butParams.y != 0){
-                        butParams.y += statusBarHeight;
-                    }
-                }
-                recycleViews();
-            }
-        });
-        windowManager.addView(fullScreenDetectorView, fullScreenDetectorParams);
-    }
     private void recycleViews()
     {
-       // Log.e("RECYCLE", postMethod + "");
             buttonView.post(new Runnable() {
                 @Override
                 public void run() {
@@ -466,7 +472,7 @@ public class FloatingWindowContainer {
             iconContainer.post(new Runnable() {
                 @Override
                 public void run() {
-                    windowManager.updateViewLayout(iconContainer, iconPanelParams);
+                    windowManager.updateViewLayout(iconContainer, iconBarParams);
                 }
             });
 
@@ -506,7 +512,7 @@ public class FloatingWindowContainer {
     private void changeHeight(WindowManager.LayoutParams params, int value)
     {
         int currValue = params.y / (incY - ( params.height / pointCount));
-        params.height = calculateHeight(value);
+        params.height = calculateHeight(value + 1);
         params.y = calculateY(params.height, currValue);
     }
     private int calculateWidth(int value)
@@ -517,7 +523,7 @@ public class FloatingWindowContainer {
     private void changeWidth(WindowManager.LayoutParams params, int value)
     {
         int currValue = params.x / (incX - (params.width / pointCount));
-        params.width = calculateWidth(value);
+        params.width = calculateWidth(value + 1);
         params.x = calculateX(params.width, currValue);
     }
     public void changeButtonWidth(int value)
@@ -530,26 +536,7 @@ public class FloatingWindowContainer {
         changeHeight(butParams, value);
         recycleViews();
     }
-    public void changeButtonX(int value)
-    {
-        changeX(butParams, value);
-        recycleViews();
-    }
-    public void changeButtonY(int value)
-    {
-        changeY(butParams, value);
-        recycleViews();
-    }
-    public void ChangeIconPanelX(int value)
-    {
-        changeX(iconPanelParams, value);
-        recycleViews();
-    }
-    public void ChangeIconPanelY(int value)
-    {
-        changeY(iconPanelParams, value);
-        recycleViews();
-    }
+
     public void setSweepDirection( int sweepDirection )
     {
         this.sweepDirection = sweepDirection;
@@ -561,12 +548,12 @@ public class FloatingWindowContainer {
     public void setMaxCount( int maxCount )
     {
         this.maxCount = maxCount;
-        initialiseIconPanel(false, iconPanelParams.x, iconPanelParams.y);
+        initialiseIconBar(false, distanceX, distanceY);
     }
     public void changeIconSize( int value )
     {
         this.iconSize = calculteIconSize(value);
-        initialiseIconPanel(false, iconPanelParams.x, iconPanelParams.y);
+        initialiseIconBar(false, distanceX, distanceY);
     }
     public void setIconViews(ArrayList<Drawable> icons)
     {
@@ -586,7 +573,7 @@ public class FloatingWindowContainer {
     public void setAnim( int animation )
     {
         this.iconAnim = animation;
-        switch (iconPanelLayout)
+        switch (iconBarLayout)
         {
             case VERTICAL:
                 if(animation == 0) {
@@ -616,7 +603,7 @@ public class FloatingWindowContainer {
             @Override
             public void onAnimationEnd(Animation animation) {
                 hideBackground();
-                if(!iconPanelIsVisible) {
+                if(!iconBarIsVisible) {
                     iconContainer.setVisibility(View.GONE);
                 }
 
@@ -629,18 +616,18 @@ public class FloatingWindowContainer {
         });
     }
 
-    public void showIconPanel()
+    public void showIconBar()
     {
         iconContainer.setVisibility(View.VISIBLE);
         iconContainer.setBackgroundColor(Color.BLUE);
-        iconPanelIsVisible = true;
+        iconBarIsVisible = true;
         recycleViews();
     }
-    public void hideIconPanel()
+    public void hideIconBar()
     {
         iconContainer.setVisibility(View.GONE);
         iconContainer.setBackgroundColor(Color.TRANSPARENT);
-        iconPanelIsVisible = false;
+        iconBarIsVisible = false;
         recycleViews();
         hideBackground();
     }
@@ -655,18 +642,19 @@ public class FloatingWindowContainer {
 
     public void changeIconLayout(int layout)
     {
+        iconBarLayout = layout;
         switch (layout) {
             case VERTICAL:
                 iconContainer.setOrientation(LinearLayout.VERTICAL);
-                iconPanelParams.width = iconSize;
-                iconPanelParams.height = iconSize * maxCount;
-                changeY(iconPanelParams, 0);
+                iconBarParams.width = iconSize;
+                iconBarParams.height = iconSize * maxCount;
+                changeY(iconBarParams, 0);
                 break;
             case HORIZONTAL:
                 iconContainer.setOrientation(LinearLayout.HORIZONTAL);
-                iconPanelParams.width = iconSize * maxCount;
-                iconPanelParams.height = iconSize;
-                changeX(iconPanelParams, 0);
+                iconBarParams.width = iconSize * maxCount;
+                iconBarParams.height = iconSize;
+                changeX(iconBarParams, 0);
                 break;
         }
         recycleViews();
@@ -682,18 +670,13 @@ public class FloatingWindowContainer {
         windowManager.getDefaultDisplay().getSize(screenSize);
         windowManager.getDefaultDisplay().getRealSize(fullScreenSize);
         calculateIncs();
-        if(backgroundParams != null) {
-            backgroundParams.height = screenSize.y;
-            backgroundParams.width = screenSize.x;
-            windowManager.updateViewLayout(backgroundView, backgroundParams);
-        }
     }
 
 
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height){
         WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_PHONE, // TYPE_APPLICATION_OVERLAY
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                WindowManager.LayoutParams.TYPE_PHONE, // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         Params.gravity = Gravity.TOP | Gravity.LEFT;
         Params.x=x;
@@ -702,15 +685,16 @@ public class FloatingWindowContainer {
         Params.width= width;
         Params.height= height;
         return Params;
+      /* FIXME  WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND  | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |WindowManager.LayoutParams.FLAG_FULLSCREEN;*/
     }
     public void dragFloatingButton(boolean value)
     {
         isDraggableFloatingButton = value;
     }
 
-    public void dragIconPanel(boolean value)
+    public void dragIconBar(boolean value)
     {
-        isDraggableIconPanel = value;
+        isDraggableIconBar = value;
     }
 
     public Point getButtonPortraitPosition()
@@ -722,33 +706,54 @@ public class FloatingWindowContainer {
     {
         return new Point(buttonLandscapeX, buttonLandscapeY);
     }
-    public Point getIconPanelPortraitPosition()
+    public Point getIconBarDistance()
     {
-        return new Point(iconPanelParams.x, iconPanelParams.y);
+        return new Point(distanceX, distanceY);
     }
 
-    public void rotateScreen(int orientation)
+    public void rotateScreen(final int orientation)
     {
       //  Log.e("BUTTON", (butParams.x + butParams.width)+ " ");
       //  Log.e("BUTTON", ((Math.floor((double) (oldX + butParams.width) / screenSize.y)) + " "));
        // Log.e("BUTTON", (screenSize.y - butParams.width) + " ");
       //  Log.e("BUTTON", (((Math.floor((double) (oldX + butParams.width) / screenSize.y)) * (screenSize.y - butParams.width))) + " ");
-        screenOrientation = orientation;
-        switch (screenOrientation)
-        {
-            case Configuration.ORIENTATION_PORTRAIT:
-                butParams.x = buttonPortraitX;
-                butParams.y = buttonPortraitY;
-                break;
-            case Configuration.ORIENTATION_LANDSCAPE:
-                butParams.x = buttonLandscapeX;
-                butParams.y = buttonLandscapeY;
-                break;
-        }
 
-        Log.e("BUTTON Portrait", buttonPortraitX + " " + buttonPortraitY);
-        Log.e("BUTTON Landscape", buttonLandscapeX + " " + buttonLandscapeY);
-        recycleViews();
+       // Log.e("BUTTON Portrait", buttonPortraitX + " " + buttonPortraitY);
+        //Log.e("BUTTON Landscape", buttonLandscapeX + " " + buttonLandscapeY);
+      /*  Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    sleep(300);*/
+                    screenOrientation = orientation;
+
+                   // Log.e("BEFORE", butParams.x + " " + butParams.y);
+                   // Log.e("BEFORE", iconBarParams.x + " " + iconBarParams.y);
+                    switch (screenOrientation)
+                    {
+                        case Configuration.ORIENTATION_PORTRAIT:
+                            butParams.x = buttonPortraitX;
+                            butParams.y = buttonPortraitY;
+                            break;
+                        case Configuration.ORIENTATION_LANDSCAPE:
+                            butParams.x = buttonLandscapeX;
+                            butParams.y = buttonLandscapeY;
+                            break;
+                    }
+                    iconBarParams.x = butParams.x - distanceX;
+                    iconBarParams.y = butParams.y - distanceY;
+                  //  Log.e("AFTER", butParams.x + " " + butParams.y);
+                  //  Log.e("AFTER", iconBarParams.x + " " + iconBarParams.y);
+                  //  Log.e("STOP", "---------------------------------");
+                    recycleViews();
+            /*    } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        thread.start();*/
+
     }
     public void setButtonColor(int color)
     {

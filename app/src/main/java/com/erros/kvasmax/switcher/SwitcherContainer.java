@@ -1,4 +1,4 @@
-package com.example.erros.myll;
+package com.erros.kvasmax.switcher;
 import android.app.usage.UsageStats;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -28,7 +28,7 @@ public class SwitcherContainer {
         List<ResolveInfo> rInfo=pm.queryIntentActivities(inten, 0);
         inten.addCategory(Intent.CATEGORY_HOME);
         List<ResolveInfo> list=pm.queryIntentActivities(inten, 0);
-        for(int i=0; i<rInfo.size();i++){
+        for(int i=0; i < rInfo.size();i++){
 
          //   if(rInfo.get(i).activityInfo.packageName.contains(ownpackage)) rInfo.remove(i);
            // else
@@ -58,6 +58,11 @@ public class SwitcherContainer {
         return this.maxCount;
     }
 
+    public boolean contains(String app)
+    {
+        return AppContainer.getApp(app) != null || app.equals(laucherPackage);
+    }
+
     public void update( List<UsageStats> stats){
         switchapps=new ArrayList<AppInfo>();
         sortApps(stats);
@@ -68,9 +73,10 @@ public class SwitcherContainer {
             if(!match){
                 match=true;
                 currentAppIsLauncher = currentAppIsLauncher(stat.getPackageName());
+                Log.e("LAUNCHER", currentAppIsLauncher + "");
                 continue;
             }
-            if(app!=null && !switchapps.contains(app)) {
+            if(app != null && !switchapps.contains(app)) {
 
                 switchapps.add(app);
             }
@@ -79,6 +85,27 @@ public class SwitcherContainer {
         }
 
     }
+   /* public void update( List<String> stats){
+        switchapps=new ArrayList<AppInfo>();
+        AppInfo app;
+        boolean match = false;
+        for (String stat: stats){
+            app = AppContainer.getApp(stat=);
+            if(!match){
+                match=true;
+                currentAppIsLauncher = currentAppIsLauncher(stat);
+                Log.e("LAUNCHER", currentAppIsLauncher + "");
+                continue;
+            }
+            if(app != null && !switchapps.contains(app)) {
+
+                switchapps.add(app);
+            }
+            //else continue;
+            if(switchapps.size() == maxCount) break;
+        }
+
+    }*/
     public void sortApps(List<UsageStats> stats){
         Collections.sort(stats, new Comparator<UsageStats>() {
             @Override
