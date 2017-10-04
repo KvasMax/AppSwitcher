@@ -40,9 +40,7 @@ import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorSelectedListener;
 import com.flask.colorpicker.builder.ColorPickerClickListener;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.NativeExpressAdView;
+
 
 public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
@@ -79,7 +77,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
 
     int defaultCoor=10;
 
-    int touchCount = 0;
+    //int touchCount = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -102,20 +100,20 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         mEditor= mSettings.edit();
 
 
-        NativeExpressAdView adView =
+       /* NativeExpressAdView adView =
                 v.findViewById(R.id.adViewTop);
         adView.loadAd(new AdRequest.Builder()
                 .addTestDevice("2EF0BBC16E5B4F63573C3867F95EC667")
-                .build());
+                .build());*/
 
        // adView = v.findViewById(R.id.adViewBottom);
        // adView.loadAd(new AdRequest.Builder().addTestDevice("33BE2250B43518CCDA7DE426D04EE232").build());
 
-        AdView mAdView = (AdView) v.findViewById(R.id.adViewBottom);
+      /*  AdView mAdView = (AdView) v.findViewById(R.id.adViewBottom);
         AdRequest adRequest = new AdRequest.Builder()
                 .addTestDevice("2EF0BBC16E5B4F63573C3867F95EC667")
                 .build();
-        mAdView.loadAd(adRequest);
+        mAdView.loadAd(adRequest);*/
 
 
         widhtChange=(SeekBar) v.findViewById(R.id.widthpanel);
@@ -133,7 +131,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         LinearLayout top = (LinearLayout) v.findViewById(R.id.topPadding);
         LinearLayout bottom = (LinearLayout) v.findViewById(R.id.bottomPadding);
         ViewGroup.LayoutParams params =  top.getLayoutParams();
-        offset = size.y;
+        offset = size.y / 2;
         params.height = offset;
         top.setLayoutParams(params);
         bottom.setLayoutParams(params);
@@ -180,7 +178,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_BUTTON, isChecked ? 1 : 0);
-                showOnConditionAd();
             }
         });
 
@@ -190,7 +187,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 sendParam(FloatingSwitcher.ACTION_ALLOW_DRAG_APPS, isChecked ? 1 : 0);
-                showOnConditionAd();
             }
         });
 
@@ -200,7 +196,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                 sendParam(FloatingSwitcher.ACTION_LAUNCH_ANIMATION_ENABLE, isChecked ? 1 : 0);
-                showOnConditionAd();
             }
         });
 
@@ -216,7 +211,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_SWEEPDIRECTION, position);
-                showOnConditionAd();
             }
 
         @Override
@@ -232,7 +226,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ORDER, position);
-                showOnConditionAd();
             }
 
             @Override
@@ -257,7 +250,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                         appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
                         break;
                 }
-                showOnConditionAd();
             }
 
             @Override
@@ -271,7 +263,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_APPS_ANIM, position);
-                showOnConditionAd();
             }
 
             @Override
@@ -295,10 +286,10 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                         }
                             saveSettings();
                             getActivity().startService(new Intent(getActivity().getBaseContext(), FloatingSwitcher.class));
-                            if(!isFirstLaunch())
+                         /*   if(!isFirstLaunch())
                             {
                                 ((MainActivity)getActivity()).showAd();
-                            }
+                            }*/
                         if(areNotificationsEnabled) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                             builder.setTitle(R.string.title_notification);
@@ -339,7 +330,7 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 else {
                     saveSettings();
                     sendParam(FloatingSwitcher.ACTION_FINISH, 666);
-                    ((MainActivity)getActivity()).showAd();
+                   // ((MainActivity)getActivity()).showAd();
                 }
                 onoff = isChecked;
             }
@@ -368,7 +359,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
                                 mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
                                 mEditor.apply();
-                                showOnConditionAd();
                             }
                         })
                         .setNegativeButton(getResources().getString(R.string.button_cancel), new DialogInterface.OnClickListener() {
@@ -387,7 +377,6 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
                 sendParam(FloatingSwitcher.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
                 mEditor.putInt(FloatingSwitcher.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
                 mEditor.apply();
-                showOnConditionAd();
             }
         });
 
@@ -418,6 +407,8 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
     public void onPause() {
         super.onPause();
         mReceiver.setReceiver(null);
+        dragButton.setChecked(false);
+        dragAppPanel.setChecked(false);
         saveSettings();
         if(isMyServiceRunning(FloatingSwitcher.class)) {
             sendParam(FloatingSwitcher.ACTION_APPS_VISIBILITY, 1);
@@ -650,13 +641,13 @@ public class fragcon extends Fragment implements AppResultsReceiver.Receiver {
         return color;
     }
 
-    private void showOnConditionAd()
+    /*private void showOnConditionAd()
     {
         touchCount++;
         if(touchCount % 10 == 0) {
             ((MainActivity) getActivity()).showAd();
         }
-    }
+    }*/
 }
 
 /*

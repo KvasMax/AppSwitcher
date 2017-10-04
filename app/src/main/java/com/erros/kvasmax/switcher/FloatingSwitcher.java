@@ -28,7 +28,6 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
 
 public class FloatingSwitcher extends Service implements ISwitcherService {
 
@@ -37,7 +36,6 @@ public class FloatingSwitcher extends Service implements ISwitcherService {
     UsageStatsManager mUsageStatsManager;
     ActivityManager am;
 
-    @Inject
     SwitcherContainer appSwither;
 
 

@@ -10,10 +10,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.InterstitialAd;
-import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -27,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
-    private InterstitialAd mInterstitialAd;
+   // private InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
-        MobileAds.initialize(this, getResources().getString(R.string.unit_id));
+    /*    MobileAds.initialize(this, getResources().getString(R.string.unit_id));
 
         mInterstitialAd = new InterstitialAd(this);
         mInterstitialAd.setAdUnitId(getResources().getString(R.string.ad_fullscreen));
@@ -61,16 +57,16 @@ public class MainActivity extends AppCompatActivity {
                         .addTestDevice("2EF0BBC16E5B4F63573C3867F95EC667")
                         .build());
             }
-        });
+        });*/
 
     }
-    public void showAd()
+   /* public void showAd()
     {
         if(mInterstitialAd.isLoaded())
         {
             mInterstitialAd.show();
         }
-    }
+    }*/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

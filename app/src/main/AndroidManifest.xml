@@ -29,7 +29,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name="com.erros.kvasmax.switcher.FloatingSwitcher" />
+        <service android:name="com.erros.kvasmax.switcher.FloatingSwitcher"
+            android:process="service.switcher"/>
         <!--
            android:process="switchapp.service"
            android:exported="true"

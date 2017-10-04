@@ -5,7 +5,9 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -62,7 +64,6 @@ public class FloatingWindowContainer {
     private int iconSize;
     private int iconSizeInc;
     private int iconSizeMin;
-
 
     private int incX;
     private int incY;
@@ -145,27 +146,24 @@ public class FloatingWindowContainer {
         else {
             iconContainer = new LinearLayout(context);
             iconContainer.setOrientation( iconBarLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL );
+            iconContainer.setBackgroundResource(R.drawable.rounded_corners);
         }
+        changeIconBarBackground(iconBarIsVisible);
 
-        if(iconBarIsVisible) {
-            iconContainer.setVisibility(View.VISIBLE);
-            iconContainer.setBackgroundColor(Color.BLUE);
-        }
-        else {
-            iconContainer.setVisibility(View.GONE);
-            iconContainer.setBackgroundColor(Color.TRANSPARENT);
-        }
-
+        GradientDrawable drawable = (GradientDrawable) iconContainer.getBackground();
+        Rect margins = new Rect();
+        drawable.getPadding(margins);
         int width = 0, height = 0;
+        int padding = margins.top * 2;
         switch (iconContainer.getOrientation())
         {
             case LinearLayout.HORIZONTAL:
-                width = iconSize * maxCount;
-                height = iconSize;
+                width = iconSize * maxCount + padding;
+                height = iconSize + padding;
                 break;
             case LinearLayout.VERTICAL:
-                height = iconSize * maxCount;
-                width = iconSize;
+                height = iconSize * maxCount + padding;
+                width = iconSize + padding;
                 break;
         }
         int appX = butParams.x - distanceX, appY = butParams.y - distanceY;
@@ -197,6 +195,7 @@ public class FloatingWindowContainer {
             iconContainer.addView(image,new LinearLayout.LayoutParams(iconSize, iconSize));
         }
         if(isNewBar) {
+
             windowManager.addView(iconContainer, iconBarParams);
             iconContainer.setOnTouchListener(new View.OnTouchListener() {
                 private int initialX;
@@ -292,6 +291,11 @@ public class FloatingWindowContainer {
         buttonView = new ImageView(context);
         //buttonView.setImageResource(R.drawable.touchpanel);
         buttonView.setBackgroundColor(buttonColor);
+        buttonView.setBackgroundResource(R.drawable.rounded_corners);
+        GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
+
+        drawable.setColor(buttonColor);
+        drawable.setAlpha(128);
         buttonView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
@@ -618,18 +622,29 @@ public class FloatingWindowContainer {
 
     public void showIconBar()
     {
-        iconContainer.setVisibility(View.VISIBLE);
-        iconContainer.setBackgroundColor(Color.BLUE);
+        changeIconBarBackground(true);
         iconBarIsVisible = true;
         recycleViews();
     }
     public void hideIconBar()
     {
-        iconContainer.setVisibility(View.GONE);
-        iconContainer.setBackgroundColor(Color.TRANSPARENT);
+        changeIconBarBackground(false);
         iconBarIsVisible = false;
         recycleViews();
         hideBackground();
+    }
+    private void changeIconBarBackground(boolean visible)
+    {
+        GradientDrawable drawable = (GradientDrawable) iconContainer.getBackground();
+        if(visible)
+        {
+            iconContainer.setVisibility(View.VISIBLE);
+            drawable.setColor(Color.BLUE);
+            drawable.setAlpha(128);
+        } else {
+            iconContainer.setVisibility(View.GONE);
+            drawable.setColor(Color.TRANSPARENT);
+        }
     }
     private void showBackground()
     {
@@ -757,7 +772,9 @@ public class FloatingWindowContainer {
     }
     public void setButtonColor(int color)
     {
-        buttonView.setBackgroundColor(color);
+        GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
+        drawable.setColor(color);
+       // drawable.setAlpha(128);
     }
 
 }
