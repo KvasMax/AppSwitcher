@@ -4,7 +4,7 @@
     android:fillBefore="false"
     >
     <translate
-        android:duration="200"
+        android:duration="150"
         android:toXDelta="-100%">
 
     </translate>

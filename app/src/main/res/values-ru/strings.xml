@@ -7,22 +7,17 @@
     <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
     <string name="allow_drag">Разрешить перетаскивание</string>
     <string name="transition_animation">Анимация перехода между приложениями</string>
-    <string name="choose_color">Выбрать цвет</string>
-    <string name="choose_transparent_color">Установить прозрачный фон</string>
+    <string name="vibration">Вибрация при переключении</string>
+    <string name="avoid_keyboard">Размещение позади клавиатуры</string>
+    <string name="choose_color">Выбрать цвет и прозрачность</string>
+    <string name="make_invisible">Сделать невидимой</string>
     <string name="button_ok">OK</string>
     <string name="button_cancel">Отмена</string>
     <string name="on">Вкл</string>
     <string name="off">Выкл</string>
     <string name="button_hide">Скрыть</string>
-    <string name="start_service">Запусr</string>
+    <string name="start_service">Запуск</string>
     <string name="grant">Разрешить</string>
-    <string name="lackOfApps">Недостаточно недавно запущенных приложений</string>
-    <string-array name="sweepdirection">
-        <item>Снизу вверх</item>
-        <item>Справо на лево</item>
-        <item>Сверху вниз</item>
-        <item>Слево на право</item>
-    </string-array>
     <string-array name="apporder">
     <item>Прямой</item>
     <item>Обратный</item>
@@ -32,27 +27,32 @@
         <item>Горизонтальный</item>
     </string-array>
     <string-array name="app_ver_anim">
-        <item>Справо налево</item>
         <item>Слево напрво</item>
+        <item>Справо налево</item>
     </string-array>
     <string-array name="app_hor_anim">
         <item>Снизу вверх</item>
         <item>Сверху вниз</item>
     </string-array>
+    <string-array name="button_positions">
+        <item>Снизу</item>
+        <item>Справа</item>
+        <item>Слева</item>
+    </string-array>
     <string name="usage_access_permission">История использования необходима для просмотра недавних приложений</string>
     <string name="overlay_permission">Наложение поверх окон необходимо для отображения плавающей кнопки</string>
-    <string name="message_hide_notifications">Данному приложению для того, чтобы оставаться работать в фоне, необходимо отображение уведомления. Его можно скрыть путем удержания на нем пальца и выбора пункта "Блокировать все уведомления"</string>
+    <string name="message_hide_notifications">Данному приложению для того, чтобы работать в фоне, необходимо отображение уведомления. Его можно скрыть путем удержания на нем пальца и выбора пункта "Блокировать все уведомления"</string>
     <string name="title_notification">Уведомление</string>
     <string name="floating_button">Плавающая кнопка</string>
-    <string name="floating_button_sweep_direction">Направление свайпа по плавающей кнопке</string>
     <string name="app_bar">Панель приложений</string>
-    <string name="width_param">Ширина</string>
-    <string name="height_param">Высота</string>
+    <string name="thickness_param">Толщина</string>
+    <string name="length_param">Длина</string>
+    <string name="position">Позиция</string>
     <string name="app_count">Количество приложений</string>
     <string name="app_icon_size">Размер иконки приложений</string>
     <string name="app_order">Порядок приложений</string>
     <string name="app_layout">Порядок размещения приложений</string>
     <string name="app_appear_animation">Анимация появления списка приложений</string>
-    <string name="how_to_use">Как использовать</string>
-    <string name="how_to_use_explanation">Часть приложения, которая выполняет переключение между приложениями, состоит из двух частей: плавающая кнопка и панель приложений. Для того, чтобы появилась панель приложений, необходимо дотронуться до плавающей кнопки и сдвинуть палец в направлении, которое указано в настройках приложения. Для переключения между приложениями необходимо отобразить панель приложений, затем довести палец до появившейся иконки приложения и убрать его.</string>
+    <string name="how_to_use">Инструкция</string>
+    <string name="how_to_use_explanation">В вашем распоряжении есть плавающая кнопка и панель приложений. Для того, чтобы появилась панель приложений, необходимо дотронуться до плавающей кнопки и сдвинуть палец с нее. Для переключения между приложениями необходимо отобразить панель приложений, затем довести палец до появившейся иконки приложения и убрать его.</string>
 </resources>

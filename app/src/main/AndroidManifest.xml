@@ -8,9 +8,7 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REAL_GET_TASKS" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <application
         android:allowBackup="true"
         android:icon="@drawable/app_icon"
@@ -19,7 +17,7 @@
         android:theme="@style/AppTheme"
         >
         <activity
-            android:name="com.erros.kvasmax.switcher.MainActivity"
+            android:name="com.erros.kvasmax.switcher.SettingActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -29,8 +27,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name="com.erros.kvasmax.switcher.FloatingSwitcher"
-            android:process="service.switcher"/>
+        <service android:name="com.erros.kvasmax.switcher.SwitcherService"
+            />
         <!--
            android:process="switchapp.service"
            android:exported="true"

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#EF670B</color>
-    <color name="colorPrimaryDark">#CE4F03</color>
-    <color name="colorAccent">#EF670B</color>
+    <color name="colorPrimary">#4169E1</color>
+    <color name="colorPrimaryDark">#4169E1</color>
+    <color name="colorAccent">#4169E1</color>
     <color name="separator">#c0c0c0</color>
+    <color name="defaultColor">#7Fff0000</color>
+    <color name="stop">#FF0000</color>
+    <color name="start">#00FF00</color>
 </resources>

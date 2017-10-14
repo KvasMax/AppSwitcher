@@ -1,8 +1,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.erros.kvasmax.switcher.MainActivity" >
+    tools:context="com.erros.kvasmax.switcher.SettingActivity" >
     <item android:id="@+id/tip_how_to_use"
         android:title="@string/how_to_use"
         app:showAsAction="never"></item>
+    <item android:id="@+id/switchForLaunch"
+        android:title=""
+        app:showAsAction="always"
+        ></item>
 </menu>

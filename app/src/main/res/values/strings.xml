@@ -7,52 +7,52 @@
     <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
     <string name="allow_drag">Allow drag</string>
     <string name="transition_animation">Transition animation between apps</string>
+    <string name="vibration">Haptic feedback on trigger</string>
+    <string name="avoid_keyboard">Place behind the keyboard</string>
     <string name="choose_color">Choose color</string>
-    <string name="choose_transparent_color">Set transparent color</string>
+    <string name="make_invisible">Make invisible</string>
     <string name="button_ok">OK</string>
     <string name="button_cancel">Cancel</string>
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="button_hide">Hide</string>
-    <string name="start_service">Start</string>
+    <string name="start_service">Enable</string>
     <string name="grant">Grant</string>
-    <string name="lackOfApps">Недостаточно недавно запущенных приложений</string>
-    <string-array name="sweepdirection">
-        <item>Bottom up</item>
-        <item>From right to left</item>
-        <item>Top down</item>
-        <item>From left to right</item>
-    </string-array>
     <string-array name="apporder">
-    <item>Direct</item>
-    <item>Reverse</item>
-</string-array>
+        <item>Direct</item>
+        <item>Reverse</item>
+    </string-array>
     <string-array name="applayout">
         <item>Vertical</item>
         <item>Horizontal</item>
     </string-array>
     <string-array name="app_ver_anim">
-        <item>From right to left</item>
         <item>From left to right</item>
+        <item>From right to left</item>
     </string-array>
     <string-array name="app_hor_anim">
         <item>Bottom up</item>
         <item>Top down</item>
+    </string-array>
+    <string-array name="button_positions">
+        <item>Bottom</item>
+        <item>Right</item>
+        <item>Left</item>
     </string-array>
     <string name="usage_access_permission">Usage access permission is needed to get recent tasks</string>
     <string name="overlay_permission">Overlay permission is needed to show floating button</string>
     <string name="message_hide_notifications">For this app to stay active in the background needs notification. You may hide it by tapping and holding the notification and selecting "Block all notifications".</string>
     <string name="title_notification">Notification</string>
     <string name="floating_button">Floating button</string>
-    <string name="floating_button_sweep_direction">Swipe direction over the floating button</string>
     <string name="app_bar">App bar</string>
-    <string name="width_param">Width</string>
-    <string name="height_param">Height</string>
+    <string name="thickness_param">Thickness</string>
+    <string name="length_param">Length</string>
+    <string name="position">Position</string>
     <string name="app_count">App count</string>
     <string name="app_icon_size">App icon size</string>
     <string name="app_order">Order of apps</string>
     <string name="app_layout">Layout of apps</string>
     <string name="app_appear_animation">Appearance animation of app list</string>
     <string name="how_to_use">How to use</string>
-    <string name="how_to_use_explanation">A part of the app that accomplish switching between apps consist of two elements: floating button and app bar. To get the app bar to appear you need to touch the floating button and then move your finger in the direction that specified in the app settings. To switch between apps you need to get the app bar to appear then move your finger to any app icon of the app bar and take you finger off the screen/</string>
+    <string name="how_to_use_explanation">You have a floating button and an app bar. To get the app bar to appear you need to touch the floating button and then swipe your finger. To switch between apps you need to get the app bar to appear then move your finger to any app icon of the app bar and take you finger off the screen.</string>
 </resources>

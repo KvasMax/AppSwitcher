@@ -11,5 +11,257 @@
     android:id="@+id/framecon"
     >
 <include layout="@layout/toolbar_layout"></include>
+    <ScrollView android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/settingsContainer"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:focusableInTouchMode="true"
+            android:id="@+id/properties">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="bottom"
+                android:id="@+id/topPadding">
+                <!--<com.google.android.gms.ads.NativeExpressAdView
+                    android:id="@+id/adViewTop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    ads:adUnitId="@string/ad_native1"
+                    ads:adSize="FULL_WIDTHx300">
+                </com.google.android.gms.ads.NativeExpressAdView> -->
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:text="@string/floating_button"
+                android:padding="5dp"
+                android:background="@color/separator"/>
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:text="@string/allow_drag"
+                android:id="@+id/dragFloatindButton"
+                android:textOff="@string/off"
+                android:textOn="@string/on" />
+            <include layout="@layout/separator"/>
+
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:text="@string/avoid_keyboard"
+                android:checked="false"
+                android:id="@+id/avoidKeyboard"
+                />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/position"/>
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+
+                android:id="@+id/buttonPosition" />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/thickness_param"/>
+            <SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:id="@+id/buttonThickness"
+                android:progress="40"
+                android:max="@integer/point_count"
+                />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/length_param"/>
+            <SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:id="@+id/buttonLength"
+                android:progress="80"
+                android:max="@integer/point_count"
+                />
+            <include layout="@layout/separator"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/butChooseColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/choose_color"
+                    android:layout_weight="1"/>
+                <Button
+                    android:id="@+id/butTransparentColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/make_invisible"
+                    android:layout_weight="1"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                android:padding="5dp"
+                android:background="@color/separator"
+                android:text="@string/app_bar"/>
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:text="@string/allow_drag"
+                android:id="@+id/dragAppPanel"
+                android:textOff="@string/off"
+                android:textOn="@string/on"  />
+            <include layout="@layout/separator"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/app_count"/>
+            <SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:id="@+id/AppCount"
+                android:progress="4"
+                android:max="9"
+                />
+            <include layout="@layout/separator"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/app_icon_size"/>
+            <SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:id="@+id/AppIconSize"
+                android:progress="35"
+                android:max="@integer/point_count"
+                />
+            <include layout="@layout/separator"/>
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:text="@string/transition_animation"
+                android:checked="true"
+                android:id="@+id/enableAnimation"
+                 />
+            <include layout="@layout/separator"/>
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:text="@string/vibration"
+                android:checked="false"
+                android:id="@+id/enableVibration"
+                 />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/app_order"/>
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:id="@+id/AppOrder" />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/app_layout"/>
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:id="@+id/AppLayout" />
+            <include layout="@layout/separator"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textStart"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/black"
+                android:text="@string/app_appear_animation"/>
+            <Spinner
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:id="@+id/AppAnim" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="top"
+                android:id="@+id/bottomPadding">
+                <!-- <com.google.android.gms.ads.NativeExpressAdView
+                     android:id="@+id/adViewBottom"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     ads:adUnitId="@string/ad_native2"
+                     ads:adSize="FULL_WIDTHx300">
+                 </com.google.android.gms.ads.NativeExpressAdView> -->
+
+                <!--  <com.google.android.gms.ads.AdView
+                      xmlns:ads="http://schemas.android.com/apk/res-auto"
+                      android:id="@+id/adViewBottom"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_gravity="center_horizontal"
+                      ads:adSize="MEDIUM_RECTANGLE"
+                      ads:adUnitId="@string/ad_banner1">
+                  </com.google.android.gms.ads.AdView> -->
+
+            </LinearLayout>
+        </LinearLayout>
+
+    </ScrollView>
     </LinearLayout>
     </android.support.design.widget.CoordinatorLayout>

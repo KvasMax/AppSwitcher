@@ -1,37 +1,29 @@
 package com.erros.kvasmax.switcher;
-import android.app.usage.UsageStats;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.util.Log;
+import android.graphics.drawable.Drawable;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class SwitcherContainer {
 
     public boolean currentAppIsLauncher;
-    private PackageManager pm;
     private int maxCount;
-    private String laucherPackage;
+    private String launcherPackage;
 
-    public ArrayList<AppInfo> switchapps;
+    private ArrayList<AppInfo> recentApps;
 
-    public SwitcherContainer(PackageManager pm, String ownpackage, int maxCount){
+    public SwitcherContainer(PackageManager packageManager, int maxCount){
 
         this.maxCount = maxCount;
-        this.pm = pm;
         Intent inten = new Intent(Intent.ACTION_MAIN);
         inten.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<ResolveInfo> rInfo=pm.queryIntentActivities(inten, 0);
+        List<ResolveInfo> rInfo = packageManager.queryIntentActivities(inten, 0);
         inten.addCategory(Intent.CATEGORY_HOME);
-        List<ResolveInfo> list=pm.queryIntentActivities(inten, 0);
-        for(int i=0; i < rInfo.size();i++){
-
-         //   if(rInfo.get(i).activityInfo.packageName.contains(ownpackage)) rInfo.remove(i);
-           // else
+        List<ResolveInfo> list = packageManager.queryIntentActivities(inten, 0);
+        for(int i = 0; i < rInfo.size();i++){
 
             for(ResolveInfo ri: list) {
                 if(rInfo.get(i).activityInfo.packageName.contains(ri.activityInfo.packageName)) {
@@ -40,13 +32,13 @@ public class SwitcherContainer {
                 }
             }
         }
-        AppContainer.Initialise(pm, rInfo);
+        AppContainer.Initialise(packageManager, rInfo);
         //new Intent(Intent.CATEGORY_HOME), PackageManager.GET_INTENT_FILTERS
-        switchapps = new ArrayList<AppInfo>();
+        recentApps = new ArrayList<>();
 
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
-        laucherPackage = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName;
+        launcherPackage = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName;
     }
 
     public void setMaxCount( int value )
@@ -57,68 +49,52 @@ public class SwitcherContainer {
     {
         return this.maxCount;
     }
+    public int getRecentAppCount( )
+    {
+        return this.recentApps.size();
+    }
+    public AppInfo getRecentApp(int position)
+    {
+        return this.recentApps.get(position);
+    }
+
+    public ArrayList<Drawable> getIcons(PackageManager pm)
+    {
+        ArrayList<Drawable> icons = new ArrayList<>();
+        for(AppInfo app : this.recentApps)
+        {
+            icons.add(app.getIcon(pm));
+        }
+        return icons;
+    }
 
     public boolean contains(String app)
     {
-        return AppContainer.getApp(app) != null || app.equals(laucherPackage);
+        return AppContainer.getApp(app) != null || app.equals(launcherPackage);
     }
 
-    public void update( List<UsageStats> stats){
-        switchapps=new ArrayList<AppInfo>();
-        sortApps(stats);
-        AppInfo app;
+    public void updateList(List<String> recentApps){
+        this.recentApps = new ArrayList<>();
+        AppInfo appInfo;
         boolean match = false;
-        for (UsageStats stat: stats){
-            app = AppContainer.getApp(stat.getPackageName());
+        for (String appName: recentApps){
+            appInfo = AppContainer.getApp(appName);
             if(!match){
-                match=true;
-                currentAppIsLauncher = currentAppIsLauncher(stat.getPackageName());
-                Log.e("LAUNCHER", currentAppIsLauncher + "");
+                match = true;
+                currentAppIsLauncher = currentAppIsLauncher(appName);
                 continue;
             }
-            if(app != null && !switchapps.contains(app)) {
-
-                switchapps.add(app);
+            if(appInfo != null && !this.recentApps.contains(appInfo)) {
+                this.recentApps.add(appInfo);
             }
-            //else continue;
-            if(switchapps.size() == maxCount) break;
+            if(this.recentApps.size() == maxCount)
+                break;
         }
 
     }
-   /* public void update( List<String> stats){
-        switchapps=new ArrayList<AppInfo>();
-        AppInfo app;
-        boolean match = false;
-        for (String stat: stats){
-            app = AppContainer.getApp(stat=);
-            if(!match){
-                match=true;
-                currentAppIsLauncher = currentAppIsLauncher(stat);
-                Log.e("LAUNCHER", currentAppIsLauncher + "");
-                continue;
-            }
-            if(app != null && !switchapps.contains(app)) {
 
-                switchapps.add(app);
-            }
-            //else continue;
-            if(switchapps.size() == maxCount) break;
-        }
-
-    }*/
-    public void sortApps(List<UsageStats> stats){
-        Collections.sort(stats, new Comparator<UsageStats>() {
-            @Override
-            public int compare(UsageStats lhs, UsageStats rhs) {
-                if (lhs.getLastTimeUsed() > rhs.getLastTimeUsed())
-                    return -1;
-                else if (lhs.getLastTimeUsed() < rhs.getLastTimeUsed()) return 1;
-                else return 0;
-            }
-        });
-    }
     private boolean currentAppIsLauncher(String packageName)
     {
-        return  packageName.equals(laucherPackage);
+        return  packageName.equals(launcherPackage);
     }
 }
