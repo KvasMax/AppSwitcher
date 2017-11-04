@@ -59,6 +59,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     private SwitchCompat enableAnimation;
     private SwitchCompat enableVibration;
     private SwitchCompat avoidKeyboard;
+    private SwitchCompat startOnBoot;
 
     private Button chooseColor;
     private Button transparentColor;
@@ -173,7 +174,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     public void initialise()
     {
-        mSettings = getSharedPreferences(SwitcherService.APP_PREFERENCES, Context.MODE_PRIVATE);
+        mSettings = getSharedPreferences(SwitcherApplication.APP_PREFERENCES, Context.MODE_PRIVATE);
         mEditor = mSettings.edit();
 
        /* if(mSettings.contains(VERSION_CODE))
@@ -243,6 +244,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         appOrder = findViewById(R.id.AppOrder);
         appLayout = findViewById(R.id.AppLayout);
         appAnim = findViewById(R.id.AppAnim);
+        startOnBoot = findViewById(R.id.startOnBoot);
         serviceLauncher = (SwitchCompat) getLayoutInflater().inflate(R.layout.launch_layout, null);
     }
 
@@ -321,7 +323,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
             @Override
             public void onClick(View view) {
                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
-                mEditor.putInt(SwitcherService.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
+                mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
                 mEditor.apply();
             }
         });
@@ -393,7 +395,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
             @Override
             public void onClick(View view) {
-                oldColor = mSettings.getInt(SwitcherService.APP_PREFERENCES_BUTTON_COLOR, defaultColor);
+                oldColor = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, defaultColor);
                 sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
                 ColorPickerDialogBuilder
                         .with(SettingActivity.this)
@@ -405,7 +407,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                             @Override
                             public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
                                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
-                                mEditor.putInt(SwitcherService.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
+                                mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
                                 mEditor.apply();
                                 sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
                             }
@@ -492,6 +494,12 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                 sendParamWithCheck(SwitcherService.ACTION_BUTTON_AVOID_KEYBOARD, isChecked ? 1 : 0);
             }
         });
+        startOnBoot.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                saveSettings();
+            }
+        });
     }
     private void launchService()
     {
@@ -501,26 +509,26 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     private boolean isFirstAppLaunch()
     {
-        return !mSettings.contains(SwitcherService.APP_PREFERENCES_APP_COUNT);
+        return !mSettings.contains(SwitcherApplication.APP_PREFERENCES_APP_COUNT);
     }
     private boolean isFirstServiceLaunch()
     {
-        return !mSettings.contains(SwitcherService.APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
+        return !mSettings.contains(SwitcherApplication.APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
     }
 
     private void loadSettings(){
 
         serviceLauncher.setChecked(isSwitcherServiceRunning());
-        thicknessChange.setProgress(mSettings.getInt(SwitcherService.APP_PREFERENCES_BUTTON_THICKNESS, 40));
-        lengthChange.setProgress(mSettings.getInt(SwitcherService.APP_PREFERENCES_BUTTON_LENGTH, 80));
-        appCount.setProgress(mSettings.getInt(SwitcherService.APP_PREFERENCES_APP_COUNT, 4));
-        appIconSize.setProgress(mSettings.getInt(SwitcherService.APP_PREFERENCES_APP_ICON_SIZE, 35));
+        thicknessChange.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, 40));
+        lengthChange.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, 80));
+        appCount.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, 4));
+        appIconSize.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, 35));
         buttonPosition.setTag(0);
-        buttonPosition.setSelection(mSettings.getInt(SwitcherService.APP_PREFERENCES_BUTTON_POSITION, 1), false);
+        buttonPosition.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, 1), false);
         appOrder.setTag(0);
-        appOrder.setSelection(mSettings.getInt(SwitcherService.APP_PREFERENCES_APP_ORDER, 1), false);
+        appOrder.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, 1), false);
         appLayout.setTag(0);
-        appLayout.setSelection(mSettings.getInt(SwitcherService.APP_PREFERENCES_APP_LAYOUT, 0), false);
+        appLayout.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, 0), false);
 
 
         switch (appLayout.getSelectedItemPosition()) {
@@ -532,26 +540,29 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                 break;
         }
         appAnim.setTag(0);
-        appAnim.setSelection(mSettings.getInt(SwitcherService.APP_PREFERENCES_APP_ANIM, 1), false);
+        appAnim.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, 1), false);
 
-        enableAnimation.setChecked(mSettings.getBoolean(SwitcherService.APP_PREFERENCES_APP_USE_ANIMATION, true));
-        enableVibration.setChecked(mSettings.getBoolean(SwitcherService.APP_PREFERENCES_APP_USE_VIBRATION, false));
-        avoidKeyboard.setChecked(mSettings.getBoolean(SwitcherService.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false));
+        enableAnimation.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, true));
+        enableVibration.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, false));
+        avoidKeyboard.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false));
         dragButton.setChecked(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
         dragAppPanel.setChecked(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
+        startOnBoot.setChecked(mSettings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT));
     }
     private void saveSettings(){
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_BUTTON_THICKNESS, thicknessChange.getProgress());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_BUTTON_LENGTH, lengthChange.getProgress());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_BUTTON_POSITION, buttonPosition.getSelectedItemPosition());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_APP_COUNT, appCount.getProgress());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_APP_ICON_SIZE, appIconSize.getProgress());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
-        mEditor.putInt(SwitcherService.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
-        mEditor.putBoolean(SwitcherService.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
-        mEditor.putBoolean(SwitcherService.APP_PREFERENCES_APP_USE_VIBRATION, enableVibration.isChecked());
-        mEditor.putBoolean(SwitcherService.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, avoidKeyboard.isChecked());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, thicknessChange.getProgress());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, lengthChange.getProgress());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, buttonPosition.getSelectedItemPosition());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, appCount.getProgress());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, appIconSize.getProgress());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
+        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
+        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
+        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, enableVibration.isChecked());
+        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, avoidKeyboard.isChecked());
+        if(startOnBoot.isChecked())  mEditor.putInt(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT, 0);
+        else mEditor.remove(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT);
         mEditor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, dragButton.isChecked());
         mEditor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, dragAppPanel.isChecked());
 
@@ -566,8 +577,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     {
         Intent in = new Intent(this, SwitcherService.class);
         in.setAction(action);
-        in.putExtra(SwitcherService.PARAM, param);
-        // in.putExtra(SwitcherService.RECEIVER, mReceiver);
+        in.putExtra(SwitcherApplication.PARAM, param);
         startService(in);
     }
     private boolean isServiceRunning(Class<?> serviceClass) {
@@ -614,7 +624,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         if (newMethod){
             requestPermissions(new String[]{permission}, requestCode);
         } else {
-            Intent intent = new Intent(permission); // Settings.ACTION_USAGE_ACCESS_SETTINGS
+            Intent intent = new Intent(permission);
             startActivityForResult(intent, requestCode);
         }
 

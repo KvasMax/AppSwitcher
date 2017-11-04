@@ -8,6 +8,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -584,7 +585,7 @@ public class WindowContainer {
             if(visible) {
                 iconBarParams.dimAmount = 0;
             } else {
-                iconBarParams.dimAmount = 0.75f;
+                iconBarParams.dimAmount = 0.7f;
             }
 
         }
@@ -625,7 +626,7 @@ public class WindowContainer {
 
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height){
         WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_PHONE, // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                getTypeView(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         Params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -723,7 +724,7 @@ public class WindowContainer {
         }
         if(buttonParams == null) {
             buttonParams = new WindowManager.LayoutParams(
-                    WindowManager.LayoutParams.TYPE_PHONE, // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                    getTypeView(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             if(avoidKeyboard) {
@@ -753,6 +754,15 @@ public class WindowContainer {
         if(position == BUTTON_POSITION_RIGHT || previousPosition == BUTTON_POSITION_RIGHT)
         {
             iconBarParams.x = screenSize.x - iconBarParams.width - iconBarParams.x;
+        }
+
+    }
+    private int getTypeView()
+    {
+        if (Build.VERSION.SDK_INT >= 26) {
+            return WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            return WindowManager.LayoutParams.TYPE_PHONE;
         }
 
     }
