@@ -43,27 +43,32 @@
                 android:layout_height="wrap_content"
                 android:textAlignment="center"
                 android:text="@string/common"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
+                android:layout_marginBottom="@dimen/default_value"
                 android:background="@color/separator"/>
+
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/start_on_boot"
                 android:id="@+id/startOnBoot"
                 android:textOff="@string/off"
                 android:textOn="@string/on" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="center"
                 android:text="@string/floating_button"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
+                android:layout_marginBottom="@dimen/default_value"
+                android:layout_marginTop="@dimen/default_value"
                 android:background="@color/separator"/>
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/allow_drag"
                 android:id="@+id/dragFloatindButton"
                 android:textOff="@string/off"
@@ -74,7 +79,7 @@
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/avoid_keyboard"
                 android:checked="false"
                 android:id="@+id/avoidKeyboard"
@@ -84,13 +89,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/position"/>
             <Spinner
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
 
                 android:id="@+id/buttonPosition" />
             <include layout="@layout/separator"/>
@@ -98,7 +103,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/thickness_param"/>
             <SeekBar
@@ -113,7 +118,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/length_param"/>
             <SeekBar
@@ -147,24 +152,33 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="center"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
+                android:layout_marginBottom="@dimen/default_value"
+                android:layout_marginTop="@dimen/default_value"
                 android:background="@color/separator"
                 android:text="@string/app_bar"/>
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/allow_drag"
                 android:id="@+id/dragAppPanel"
                 android:textOff="@string/off"
                 android:textOn="@string/on"  />
             <include layout="@layout/separator"/>
-
+            <TextView
+                android:id="@+id/black_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/blacklist"
+                android:padding="@dimen/default_value"
+                />
+            <include layout="@layout/separator"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/app_count"/>
             <SeekBar
@@ -180,7 +194,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/app_icon_size"/>
             <SeekBar
@@ -195,7 +209,7 @@
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/transition_animation"
                 android:checked="true"
                 android:id="@+id/enableAnimation"
@@ -205,7 +219,7 @@
             <android.support.v7.widget.SwitchCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:text="@string/vibration"
                 android:checked="false"
                 android:id="@+id/enableVibration"
@@ -215,39 +229,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/app_order"/>
             <Spinner
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
                 android:id="@+id/AppOrder" />
             <include layout="@layout/separator"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/app_layout"/>
             <Spinner
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
                 android:id="@+id/AppLayout" />
             <include layout="@layout/separator"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="textStart"
-                android:paddingLeft="5dp"
+                android:paddingLeft="@dimen/default_value"
                 android:textColor="@android:color/black"
                 android:text="@string/app_appear_animation"/>
             <Spinner
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
+                android:padding="@dimen/default_value"
                 android:id="@+id/AppAnim" />
             <LinearLayout
                 android:layout_width="match_parent"

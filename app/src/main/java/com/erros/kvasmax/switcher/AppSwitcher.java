@@ -16,7 +16,9 @@ import android.os.Vibrator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by minimax on 14.10.17.
@@ -28,42 +30,41 @@ public class AppSwitcher {
     private UsageStatsManager usageStatsManager;
     private PackageManager packageManager;
     private Vibrator vibrator;
-    private SwitcherContainer appContainer;
+    private AppContainer appContainer;
 
     private int period = 30; //minutes
     private int vibrationDuration = 10;
     private boolean useAnimation = true;
     private boolean useVibration = false;
 
+    Set<String> blacklist;
+
     public AppSwitcher(Context context, UsageStatsManager usageStatsManager, PackageManager packageManager, Vibrator vibrator,
-                       int maxCount, boolean useAnimation, boolean useVibration)
-    {
+                       int maxCount, boolean useAnimation, boolean useVibration, Set<String> blacklist) {
         this.context = context;
         this.usageStatsManager = usageStatsManager;
         this.packageManager = packageManager;
         this.vibrator = vibrator;
-        this.appContainer = new SwitcherContainer(packageManager, maxCount);
-        this.useAnimation = useAnimation;
-        this.useVibration = useVibration;
+        this.appContainer = new AppContainer(packageManager, maxCount);
+        useAnimation(useAnimation);
+        useVibration(useVibration);
+        updateBlacklist(blacklist);
     }
 
-    public void setMaxCount(int maxCount)
-    {
+    public void setMaxCount(int maxCount) {
         this.appContainer.setMaxCount(maxCount);
     }
 
-    public void update()
-    {
+    public void update() {
         List<String> recentApps = getRecentApps();
         appContainer.updateList(recentApps);
     }
-    public ArrayList<Drawable> getIcons()
-    {
+
+    public ArrayList<Drawable> getIcons() {
         return appContainer.getIcons(packageManager);
     }
 
-    private List<String> getRecentApps()
-    {
+    private List<String> getRecentApps() {
         long currentTime = System.currentTimeMillis();
         int period = this.period;
         List<UsageStats> usageStats;
@@ -72,31 +73,26 @@ public class AppSwitcher {
             usageStats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * period, currentTime);
             sortUsageStats(usageStats);
             List<String> usedApps = new ArrayList<>();
-            for(UsageStats stat: usageStats)
-            {
+            for (UsageStats stat : usageStats) {
                 String packageName = stat.getPackageName();
-                if(!usedApps.contains(packageName) && appContainer.contains(stat.getPackageName()))
-                {
+                if (!usedApps.contains(packageName) && appContainer.contains(packageName) && !blacklist.contains(packageName)) {
                     usedApps.add(packageName);
                 }
             }
 
-            UsageEvents usageEvents = usageStatsManager.queryEvents( currentTime - 1000 * 60 * period, currentTime);
+            UsageEvents usageEvents = usageStatsManager.queryEvents(currentTime - 1000 * 60 * period, currentTime);
             UsageEvents.Event event = new UsageEvents.Event();
             ArrayList<String> foregroundApps = new ArrayList<>();
-            while (usageEvents.hasNextEvent())
-            {
+            while (usageEvents.hasNextEvent()) {
                 usageEvents.getNextEvent(event);
-                if(event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND && !foregroundApps.contains(event.getPackageName())) {
+                if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND && !foregroundApps.contains(event.getPackageName())) {
                     foregroundApps.add(event.getPackageName());
                 }
             }
 
             recentApps = new ArrayList<>();
-            for(String app: usedApps)
-            {
-                if(foregroundApps.contains(app))
-                {
+            for (String app : usedApps) {
+                if (foregroundApps.contains(app)) {
                     recentApps.add(app);
                 }
             }
@@ -105,7 +101,7 @@ public class AppSwitcher {
             if (period > 43200)
                 break;
         }
-        while(recentApps.size() <= appContainer.getMaxCount() + 1 );
+        while (recentApps.size() <= appContainer.getMaxCount() + 1);
 
         return recentApps;
     }
@@ -119,14 +115,12 @@ public class AppSwitcher {
                         new Intent(Intent.ACTION_MAIN);
                 intent.setClassName(appInf.getPackageName(), appInf.getClassname());
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                //  in.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION); // with animation or not
                 intent.addCategory(Intent.CATEGORY_LAUNCHER);
-                if(appContainer.currentAppIsLauncher)
-                {
+                if (appContainer.currentAppIsLauncher) {
                     PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
                     pendingIntent.send();
                 } else {
-                    if(useAnimation) {
+                    if (useAnimation) {
                         ActivityOptions options =
                                 ActivityOptions.makeCustomAnimation(context, R.anim.fade_in, R.anim.fade_up_out);
                         //  ActivityOptions.makeCustomAnimation(getApplicationContext(), R.anim.show_from_bottom,R.anim.move_away);
@@ -136,8 +130,7 @@ public class AppSwitcher {
                         context.startActivity(intent);
                     }
                 }
-                if(useVibration)
-                {
+                if (useVibration) {
                     if (Build.VERSION.SDK_INT >= 26) {
                         vibrator.vibrate(VibrationEffect.createOneShot(vibrationDuration, VibrationEffect.DEFAULT_AMPLITUDE));
                     } else {
@@ -151,16 +144,15 @@ public class AppSwitcher {
         }
     }
 
-    public void useAnimation(boolean value)
-    {
+    public void useAnimation(boolean value) {
         this.useAnimation = value;
     }
-    public void useVibration(boolean value)
-    {
+
+    public void useVibration(boolean value) {
         this.useVibration = value;
     }
 
-    private void sortUsageStats(List<UsageStats> stats){
+    private void sortUsageStats(List<UsageStats> stats) {
         Collections.sort(stats, new Comparator<UsageStats>() {
             @Override
             public int compare(UsageStats lhs, UsageStats rhs) {
@@ -170,5 +162,9 @@ public class AppSwitcher {
                 else return 0;
             }
         });
+    }
+
+    public void updateBlacklist(Set<String> blacklist) {
+        this.blacklist = blacklist;
     }
 }

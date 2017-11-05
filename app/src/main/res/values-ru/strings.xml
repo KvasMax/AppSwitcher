@@ -6,6 +6,7 @@
     <string name="ad_native2">ca-app-pub-5616229813369025/4027506745</string>
     <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
     <string name="common">Общие</string>
+    <string name="blacklist">Черный список приложений</string>
     <string name="start_on_boot">Автозапуск при включении</string>
     <string name="allow_drag">Разрешить перетаскивание</string>
     <string name="transition_animation">Анимация перехода между приложениями</string>

@@ -6,6 +6,7 @@
     <string name="ad_native2">ca-app-pub-5616229813369025/4027506745</string>
     <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
     <string name="common">Common</string>
+    <string name="blacklist">App blacklist</string>
     <string name="start_on_boot">Start on boot</string>
     <string name="allow_drag">Allow drag</string>
     <string name="transition_animation">Transition animation between apps</string>

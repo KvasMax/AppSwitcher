@@ -4,4 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="2dp"
     android:background="@color/separator"
-    android:layout_margin="5dp"/>
+    android:layout_marginTop="@dimen/default_value"
+    android:layout_marginBottom="@dimen/default_value"
+    />

@@ -1,8 +1,8 @@
 package com.erros.kvasmax.switcher;
 
 import android.app.ActivityManager;
-import android.app.AlertDialog;
 import android.app.AppOpsManager;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,27 +17,41 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorChangedListener;
 import com.flask.colorpicker.builder.ColorPickerClickListener;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class SettingActivity extends AppCompatActivity implements AppResultsReceiver.Receiver {
 
@@ -46,8 +60,8 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     final static String VERSION_CODE = "VERSION_CODE";
 
     private AppResultsReceiver mReceiver;
-    private SharedPreferences mSettings;
-    private SharedPreferences.Editor mEditor;
+    private SharedPreferences settings;
+    private SharedPreferences.Editor editor;
 
     private Spinner buttonPosition;
     private Spinner appOrder;
@@ -64,21 +78,31 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     private Button chooseColor;
     private Button transparentColor;
 
-    SeekBar thicknessChange;
-    SeekBar lengthChange;
+    private SeekBar thicknessChange;
+    private SeekBar lengthChange;
 
-    SeekBar appCount;
-    SeekBar appIconSize;
+    private SeekBar appCount;
+    private SeekBar appIconSize;
 
-    ScrollView settingsScrollView;
+    private ScrollView settingsScrollView;
+
+    private TextView blacklistButton;
     int offset;
 
-    public LinearLayout settingContainer;
+    private LinearLayout settingContainer;
 
-    int defaultCoor=10;
+    private Dialog blacklistDialog;
+    private ListView blacklistView;
 
+    private AlertDialog colorPickerDialog;
 
-   // private InterstitialAd mInterstitialAd;
+    int defaultCoor = 10;
+
+    Set<String> blacklist;
+    List<AppInfo> appList;
+    BaseAdapter adapterBlacklist;
+
+    // private InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,8 +126,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId())
-        {
+        switch (item.getItemId()) {
             case R.id.tip_how_to_use:
                 showTip();
                 break;
@@ -111,8 +134,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         return super.onOptionsItemSelected(item);
     }
 
-    public void showTip()
-    {
+    public void showTip() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.how_to_use);
         builder.setMessage(R.string.how_to_use_explanation);
@@ -134,7 +156,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     @Override
     protected void onPause() {
         super.onPause();
-      //  showAd();
+        //  showAd();
 
         mReceiver.setReceiver(null);
         dragButton.setChecked(false);
@@ -143,7 +165,6 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
         sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
     }
-
 
 
     @Override
@@ -163,35 +184,31 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                 settingsScrollView.scrollTo(0, offset);
             }
         });*/
-
-        sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+        if (!blacklistDialog.isShowing() && colorPickerDialog == null)
+            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
     }
 
     @Override
     public void onReceiveResult(int resultCode, Bundle data) {
-        if(resultCode==0);
+        if (resultCode == 0) ;
     }
 
-    public void initialise()
-    {
-        mSettings = getSharedPreferences(SwitcherApplication.APP_PREFERENCES, Context.MODE_PRIVATE);
-        mEditor = mSettings.edit();
+    public void initialise() {
+        settings = getSharedPreferences(SwitcherApplication.APP_PREFERENCES, Context.MODE_PRIVATE);
+        editor = settings.edit();
 
-       /* if(mSettings.contains(VERSION_CODE))
+       /* if(settings.contains(VERSION_CODE))
         {
-            int version = mSettings.getInt(VERSION_CODE, BuildConfig.VERSION_CODE - 1);
+            int version = settings.getInt(VERSION_CODE, BuildConfig.VERSION_CODE - 1);
             if(version != BuildConfig.VERSION_CODE)
             {
-                mEditor.clear();
-                mEditor.apply();
+                editor.clear();
+                editor.apply();
             }
         } else {
-            mEditor.putInt(VERSION_CODE, BuildConfig.VERSION_CODE);
-            mEditor.apply();
+            editor.putInt(VERSION_CODE, BuildConfig.VERSION_CODE);
+            editor.apply();
         }*/
-
-
-
 
 
         WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -199,8 +216,8 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         windowManager.getDefaultDisplay().getSize(size);
         LinearLayout top = findViewById(R.id.topPadding);
         LinearLayout bottom = findViewById(R.id.bottomPadding);
-        ViewGroup.LayoutParams params =  bottom.getLayoutParams();
-        offset = (int)(size.y * 0.7);
+        ViewGroup.LayoutParams params = bottom.getLayoutParams();
+        offset = (int) (size.y * 0.7);
         params.height = offset;
         //top.setLayoutParams(params);
         bottom.setLayoutParams(params);
@@ -213,20 +230,18 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         loadSettings();
         setListeners();
 
-        if(isFirstServiceLaunch())
-        {
+        if (isFirstServiceLaunch()) {
             serviceLauncher.setChecked(true);
         } else {
             checkPermissions();
         }
-        if(isFirstAppLaunch()) {
+        if (isFirstAppLaunch()) {
             showTip();
         }
 
     }
 
-    private void findViews()
-    {
+    private void findViews() {
         settingsScrollView = findViewById(R.id.settingsContainer);
         thicknessChange = findViewById(R.id.buttonThickness);
         lengthChange = findViewById(R.id.buttonLength);
@@ -245,15 +260,35 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         appLayout = findViewById(R.id.AppLayout);
         appAnim = findViewById(R.id.AppAnim);
         startOnBoot = findViewById(R.id.startOnBoot);
+        blacklistButton = findViewById(R.id.black_list);
         serviceLauncher = (SwitchCompat) getLayoutInflater().inflate(R.layout.launch_layout, null);
+        FrameLayout blacklistContainerView = (FrameLayout) getLayoutInflater().inflate(R.layout.app_list, null);
+        blacklistView = blacklistContainerView.findViewById(R.id.app_list);
+
+        blacklistDialog = new Dialog(SettingActivity.this);
+        blacklistDialog.setContentView(blacklistContainerView);
+        blacklistDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialogInterface) {
+                editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, blacklist);
+                editor.apply();
+                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+                sendParamWithCheck(SwitcherService.ACTION_UPDATE_BLACKLIST, 0);
+            }
+        });
+        //FIXME WTF?
+        Window window = blacklistDialog.getWindow();
+        WindowManager.LayoutParams wlp;
+        wlp = window.getAttributes();
+        wlp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        window.setAttributes(wlp);
     }
 
-    private void setListeners()
-    {
+    private void setListeners() {
         buttonPosition.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(buttonPosition.getTag() == null) {
+                if (buttonPosition.getTag() == null) {
                     sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_POSITION, position);
                 } else {
                     buttonPosition.setTag(null);
@@ -268,7 +303,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         appAnim.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(appAnim.getTag() == null) {
+                if (appAnim.getTag() == null) {
                     sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ANIM, position);
                 } else {
                     appAnim.setTag(null);
@@ -283,10 +318,9 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         appLayout.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(appLayout.getTag() == null) {
+                if (appLayout.getTag() == null) {
                     sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_LAYOUT, position);
-                    switch (position)
-                    {
+                    switch (position) {
                         case WindowContainer.VERTICAL:
                             appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
                             break;
@@ -307,7 +341,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         appOrder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if(appOrder.getTag() == null) {
+                if (appOrder.getTag() == null) {
                     sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ORDER, position);
                 } else {
                     appOrder.setTag(null);
@@ -322,9 +356,9 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         transparentColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
+                editor.apply();
                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
-                mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
-                mEditor.apply();
             }
         });
         serviceLauncher.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -380,10 +414,9 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                         isChecked = false;
                         buttonView.setChecked(isChecked);
                     }
-                }
-                else {
+                } else {
                     saveSettings();
-                    sendParamWithCheck (SwitcherService.ACTION_FINISH, 666);
+                    sendParamWithCheck(SwitcherService.ACTION_FINISH, 666);
                 }
             }
         });
@@ -395,44 +428,49 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
             @Override
             public void onClick(View view) {
-                oldColor = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, defaultColor);
+                oldColor = settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, defaultColor);
                 sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
-                ColorPickerDialogBuilder
+                colorPickerDialog = ColorPickerDialogBuilder
                         .with(SettingActivity.this)
                         .setTitle(getResources().getString(R.string.choose_color))
-                        .initialColor( oldColor == Color.TRANSPARENT ? defaultColor : oldColor)
+                        .initialColor(oldColor == Color.TRANSPARENT ? defaultColor : oldColor)
                         .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
                         .density(12)
                         .setPositiveButton(getResources().getString(R.string.button_ok), new ColorPickerClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
+                                editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
+                                editor.apply();
                                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
-                                mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
-                                mEditor.apply();
-                                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
                             }
                         })
                         .setNegativeButton(getResources().getString(R.string.button_cancel), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, oldColor);
-                                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
                             }
                         })
                         .setOnColorChangedListener(new OnColorChangedListener() {
                             @Override
-                            public void onColorChanged(int i) {
-                                sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, i);
+                            public void onColorChanged(int color) {
+                                sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, color);
                             }
                         })
-                        .build()
-                        .show();
+                        .build();
+                colorPickerDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+                        colorPickerDialog = null;
+                    }
+                });
+                colorPickerDialog.show();
             }
         });
-        SeekBar.OnSeekBarChangeListener seeklistener = new SeekBar.OnSeekBarChangeListener() {
+        SeekBar.OnSeekBarChangeListener seekListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                switch(seekBar.getId()) {
+                switch (seekBar.getId()) {
                     case R.id.buttonThickness:
                         sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_THICKNESS, progress);
                         break;
@@ -459,10 +497,10 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
             }
         };
 
-        thicknessChange.setOnSeekBarChangeListener(seeklistener);
-        lengthChange.setOnSeekBarChangeListener(seeklistener);
-        appCount.setOnSeekBarChangeListener(seeklistener);
-        appIconSize.setOnSeekBarChangeListener(seeklistener);
+        thicknessChange.setOnSeekBarChangeListener(seekListener);
+        lengthChange.setOnSeekBarChangeListener(seekListener);
+        appCount.setOnSeekBarChangeListener(seekListener);
+        appIconSize.setOnSeekBarChangeListener(seekListener);
 
         dragButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -500,35 +538,57 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                 saveSettings();
             }
         });
+        blacklistButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+                blacklistDialog.show();
+            }
+        });
+        blacklistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                AppViewHolder holder = (AppViewHolder) view.getTag();
+                String packageName = appList.get(i).getPackageName();
+                if (blacklist.contains(packageName)) {
+                    blacklist.remove(packageName);
+                    holder.hidden.setChecked(false);
+                } else {
+                    blacklist.add(packageName);
+                    holder.hidden.setChecked(true);
+                }
+            }
+        });
     }
-    private void launchService()
-    {
+
+    private void launchService() {
         saveSettings();
-        startService(new Intent(getBaseContext(), SwitcherService.class));
+        Intent intent =new Intent(getApplicationContext(), SwitcherService.class);
+        intent.putExtra(SwitcherService.PARAM, 0);
+        startService(intent);
     }
 
-    private boolean isFirstAppLaunch()
-    {
-        return !mSettings.contains(SwitcherApplication.APP_PREFERENCES_APP_COUNT);
-    }
-    private boolean isFirstServiceLaunch()
-    {
-        return !mSettings.contains(SwitcherApplication.APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
+    private boolean isFirstAppLaunch() {
+        return !settings.contains(SwitcherApplication.APP_PREFERENCES_APP_COUNT);
     }
 
-    private void loadSettings(){
+    private boolean isFirstServiceLaunch() {
+        return !settings.contains(SwitcherApplication.APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
+    }
+
+    private void loadSettings() {
 
         serviceLauncher.setChecked(isSwitcherServiceRunning());
-        thicknessChange.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, 40));
-        lengthChange.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, 80));
-        appCount.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, 4));
-        appIconSize.setProgress(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, 35));
+        thicknessChange.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, 40));
+        lengthChange.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, 80));
+        appCount.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, 4));
+        appIconSize.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, 35));
         buttonPosition.setTag(0);
-        buttonPosition.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, 1), false);
+        buttonPosition.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, 1), false);
         appOrder.setTag(0);
-        appOrder.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, 1), false);
+        appOrder.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, 1), false);
         appLayout.setTag(0);
-        appLayout.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, 0), false);
+        appLayout.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, 0), false);
 
 
         switch (appLayout.getSelectedItemPosition()) {
@@ -540,46 +600,99 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
                 break;
         }
         appAnim.setTag(0);
-        appAnim.setSelection(mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, 1), false);
+        appAnim.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, 1), false);
 
-        enableAnimation.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, true));
-        enableVibration.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, false));
-        avoidKeyboard.setChecked(mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false));
-        dragButton.setChecked(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
-        dragAppPanel.setChecked(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
-        startOnBoot.setChecked(mSettings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT));
-    }
-    private void saveSettings(){
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, thicknessChange.getProgress());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, lengthChange.getProgress());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, buttonPosition.getSelectedItemPosition());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, appCount.getProgress());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, appIconSize.getProgress());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
-        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
-        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, enableVibration.isChecked());
-        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, avoidKeyboard.isChecked());
-        if(startOnBoot.isChecked())  mEditor.putInt(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT, 0);
-        else mEditor.remove(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT);
-        mEditor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, dragButton.isChecked());
-        mEditor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, dragAppPanel.isChecked());
+        enableAnimation.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, true));
+        enableVibration.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, false));
+        avoidKeyboard.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false));
+        dragButton.setChecked(settings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
+        dragAppPanel.setChecked(settings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
+        startOnBoot.setChecked(settings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT));
 
-        mEditor.apply();
+
+        appList = Utils.getApps(getPackageManager());
+        Collections.sort(appList, new Comparator<AppInfo>() {
+            @Override
+            public int compare(AppInfo first, AppInfo second) {
+                return first.getName().compareTo(second.getName());
+            }
+        });
+        if (!settings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST)) {
+            editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>(appList.size() / 2));
+            editor.apply();
+        }
+        blacklist = settings.getStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>());
+        adapterBlacklist = new BaseAdapter() {
+            @Override
+            public int getCount() {
+                return appList.size();
+            }
+
+            @Override
+            public Object getItem(int i) {
+                return null;
+            }
+
+            @Override
+            public long getItemId(int i) {
+                return 0;
+            }
+
+            @Override
+            public View getView(int position, View view, ViewGroup viewGroup) {
+                AppViewHolder holder;
+                if (view == null) {
+                    view = getLayoutInflater().inflate(R.layout.app_list_row, viewGroup, false);
+                    holder = new AppViewHolder(view);
+                    view.setTag(holder);
+                } else {
+                    holder = (AppViewHolder) view.getTag();
+                }
+                AppInfo app = appList.get(position);
+                holder.icon.setImageDrawable(app.getIcon(getPackageManager()));
+                holder.name.setText(app.getName());
+                holder.hidden.setChecked(blacklist.contains(app.getPackageName()));
+                return view;
+            }
+        };
+        blacklistView.setAdapter(adapterBlacklist);
     }
-    private void sendParamWithCheck(String action, int param){
-        if(SwitcherApplication.serviceIsRunning.get()) {
+
+    private void saveSettings() {
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, thicknessChange.getProgress());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, lengthChange.getProgress());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, buttonPosition.getSelectedItemPosition());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, appCount.getProgress());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, appIconSize.getProgress());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
+        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
+        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
+        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, enableVibration.isChecked());
+        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, avoidKeyboard.isChecked());
+        if (startOnBoot.isChecked())
+            editor.putInt(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT, 0);
+        else editor.remove(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT);
+        editor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, dragButton.isChecked());
+        editor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, dragAppPanel.isChecked());
+        editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, blacklist);
+
+        editor.apply();
+    }
+
+    private void sendParamWithCheck(String action, int param) {
+        if (SwitcherApplication.serviceIsRunning.get()) {
             sendParam(action, param);
         }
     }
-    private void sendParam(String action, int param)
-    {
+
+    private void sendParam(String action, int param) {
         Intent in = new Intent(this, SwitcherService.class);
         in.setAction(action);
-        in.putExtra(SwitcherApplication.PARAM, param);
+        in.putExtra(SwitcherService.PARAM, param);
         startService(in);
     }
+
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -589,21 +702,19 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         }
         return false;
     }
-    private boolean isSwitcherServiceRunning()
-    {
+
+    private boolean isSwitcherServiceRunning() {
         return SwitcherApplication.serviceIsRunning.get();
     }
 
-    private ArrayAdapter getAnimAdapter(int resId)
-    {
+    private ArrayAdapter getAnimAdapter(int resId) {
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, resId, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         return adapter;
     }
-    private boolean permissionIsGranted(String permission)
-    {
-        if(permission.equals(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        {
+
+    private boolean permissionIsGranted(String permission) {
+        if (permission.equals(Settings.ACTION_USAGE_ACCESS_SETTINGS)) {
             boolean granted = false;
             AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
             int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
@@ -619,9 +730,10 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
                 || checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
     }
+
     private void sendPermissionRequest(String permission, boolean newMethod, int requestCode) {
 
-        if (newMethod){
+        if (newMethod) {
             requestPermissions(new String[]{permission}, requestCode);
         } else {
             Intent intent = new Intent(permission);
@@ -629,16 +741,14 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         }
 
     }
+
     private boolean checkPermissions() {
 
         boolean granted = true;
-        if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        {
+        if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS)) {
             requestPermission(Settings.ACTION_USAGE_ACCESS_SETTINGS, false, getResources().getString(R.string.usage_access_permission), USAGE_ACCESS_PERMISSION_REQUEST_CODE);
             granted = false;
-        }
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this))
-        {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             requestPermission(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, false, getResources().getString(R.string.overlay_permission), PERMISSION_REQUEST_CODE);
             granted = false;
         }
@@ -646,14 +756,12 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     }
 
-    private void requestPermission(String permission, boolean newMethod, String message, int requestCode)
-    {
-        if(permissionIsGranted(permission))
+    private void requestPermission(String permission, boolean newMethod, String message, int requestCode) {
+        if (permissionIsGranted(permission))
             return;
 
-        if(newMethod) {
-            if (shouldShowRequestPermissionRationale(permission))
-            {
+        if (newMethod) {
+            if (shouldShowRequestPermissionRationale(permission)) {
                 showPermissionDialog(permission, newMethod, message, requestCode);
 
             } else {
@@ -667,8 +775,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     }
 
-    private void showPermissionDialog(final String permission, final boolean newMethod, String message, final int requestCode)
-    {
+    private void showPermissionDialog(final String permission, final boolean newMethod, String message, final int requestCode) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(message);
         builder.setCancelable(false);
@@ -685,8 +792,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(checkPermissions() && isFirstServiceLaunch())
-        {
+        if (checkPermissions() && isFirstServiceLaunch()) {
             serviceLauncher.setChecked(true);
         }
     }
@@ -694,6 +800,19 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    private class AppViewHolder {
+
+        private final ImageView icon;
+        private final TextView name;
+        private final AppCompatCheckBox hidden;
+
+        public AppViewHolder(View view) {
+            icon = view.findViewById(R.id.app_icon);
+            name = view.findViewById(R.id.app_name);
+            hidden = view.findViewById(R.id.hidden);
+        }
     }
 
 }

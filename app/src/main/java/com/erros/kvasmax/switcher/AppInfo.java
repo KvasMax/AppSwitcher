@@ -8,34 +8,33 @@ import android.graphics.drawable.Drawable;
  */
 public class AppInfo {
 
-    public AppInfo(String pack, String name/*, Drawable img*/){
-        packageName =pack;
-        classname=name;
-    //    icon=img;
+    private String packageName;
+    private String classname;
+    private String name;
+
+    public AppInfo(String packageName, String classname, String name) {
+        this.packageName = packageName;
+        this.classname = classname;
+        this.name = name;
     }
-    String packageName;
-    String classname;
 
     public Drawable getIcon(PackageManager pm) {
         try {
             return pm.getApplicationIcon(packageName);
-        } catch (Exception ex)
-        {
-            //TODO:
+        } catch (Exception ex) {
             return null;
         }
 
     }
-
-   // Drawable icon;
     public String getClassname() {
         return classname;
     }
+
     public String getPackageName() {
         return packageName;
     }
 
-
-
-
+    public String getName() {
+        return name;
+    }
 }
