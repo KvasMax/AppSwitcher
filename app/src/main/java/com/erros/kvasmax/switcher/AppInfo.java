@@ -26,6 +26,7 @@ public class AppInfo {
         }
 
     }
+
     public String getClassname() {
         return classname;
     }

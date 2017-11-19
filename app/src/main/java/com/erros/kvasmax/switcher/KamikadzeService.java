@@ -31,8 +31,7 @@ public class KamikadzeService extends Service {
         stopForeground(true);
     }
 
-    public static Notification getNotification(Context context)
-    {
+    public static Notification getNotification(Context context) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "");
         if (Build.VERSION.SDK_INT < 24)
             builder.setPriority(Notification.PRIORITY_MIN);

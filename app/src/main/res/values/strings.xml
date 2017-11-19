@@ -11,7 +11,7 @@
     <string name="allow_drag">Allow drag</string>
     <string name="transition_animation">Transition animation between apps</string>
     <string name="vibration">Haptic feedback on trigger</string>
-    <string name="avoid_keyboard">Place behind the keyboard</string>
+    <string name="avoid_keyboard">Avoid keyboard overlapping</string>
     <string name="choose_color">Choose color</string>
     <string name="make_invisible">Make invisible</string>
     <string name="button_ok">OK</string>
@@ -32,10 +32,12 @@
     <string-array name="app_ver_anim">
         <item>From left to right</item>
         <item>From right to left</item>
+        <item>Emerging</item>
     </string-array>
     <string-array name="app_hor_anim">
         <item>Bottom up</item>
         <item>Top down</item>
+        <item>Emerging</item>
     </string-array>
     <string-array name="button_positions">
         <item>Bottom</item>

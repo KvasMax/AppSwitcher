@@ -53,13 +53,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class SettingActivity extends AppCompatActivity implements AppResultsReceiver.Receiver {
+public class SettingActivity extends AppCompatActivity {
 
     final static int PERMISSION_REQUEST_CODE = 102;
     final static int USAGE_ACCESS_PERMISSION_REQUEST_CODE = 101;
     final static String VERSION_CODE = "VERSION_CODE";
 
-    private AppResultsReceiver mReceiver;
     private SharedPreferences settings;
     private SharedPreferences.Editor editor;
 
@@ -157,8 +156,6 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     protected void onPause() {
         super.onPause();
         //  showAd();
-
-        mReceiver.setReceiver(null);
         dragButton.setChecked(false);
         dragAppPanel.setChecked(false);
         saveSettings();
@@ -176,8 +173,6 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
     @Override
     protected void onResume() {
         super.onResume();
-        mReceiver = new AppResultsReceiver(new Handler());
-        mReceiver.setReceiver(this);
        /* settingsScrollView.post(new Runnable() {
             @Override
             public void run() {
@@ -186,11 +181,6 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
         });*/
         if (!blacklistDialog.isShowing() && colorPickerDialog == null)
             sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
-    }
-
-    @Override
-    public void onReceiveResult(int resultCode, Bundle data) {
-        if (resultCode == 0) ;
     }
 
     public void initialise() {
@@ -563,7 +553,7 @@ public class SettingActivity extends AppCompatActivity implements AppResultsRece
 
     private void launchService() {
         saveSettings();
-        Intent intent =new Intent(getApplicationContext(), SwitcherService.class);
+        Intent intent = new Intent(getApplicationContext(), SwitcherService.class);
         intent.putExtra(SwitcherService.PARAM, 0);
         startService(intent);
     }

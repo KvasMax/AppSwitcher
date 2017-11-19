@@ -146,7 +146,7 @@ public class SwitcherService extends Service implements ISwitcherService {
                     butLandscapeY, iconSize, distanceX, distanceY, appAnim, getResources().getConfiguration().orientation, buttonColor, avoidKeyboard);
         } else {
             winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount, getResources().getConfiguration().orientation,
-                    appLayout, appOrder, buttonPosition, buttonThickness, buttonLength, buttonColor, iconSize, avoidKeyboard);
+                    appLayout, appOrder, appAnim, buttonPosition, buttonThickness, buttonLength, buttonColor, iconSize, avoidKeyboard);
         }
         winContainer.dragFloatingButton(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
         winContainer.dragIconBar(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
@@ -200,7 +200,7 @@ public class SwitcherService extends Service implements ISwitcherService {
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_LAYOUT)) {
                 winContainer.changeIconBarLayout(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ANIM)) {
-                winContainer.setAnim(param);
+                winContainer.setAnimation(param);
             } else if (intent.getAction().equals(ACTION_UPDATE_BLACKLIST)) {
                 appSwitcher.updateBlacklist(mSettings.getStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>()));
             }

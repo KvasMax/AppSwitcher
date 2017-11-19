@@ -1,4 +1,5 @@
 package com.erros.kvasmax.switcher;
+
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -16,7 +17,7 @@ public class AppContainer {
     private List<AppInfo> appList;
     private ArrayList<AppInfo> recentApps = new ArrayList<>();
 
-    public AppContainer(PackageManager packageManager, int maxCount){
+    public AppContainer(PackageManager packageManager, int maxCount) {
 
         this.maxCount = maxCount;
         appList = Utils.getApps(packageManager);
@@ -26,71 +27,63 @@ public class AppContainer {
         launcherPackage = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName;
     }
 
-    private AppInfo getApp(String packageName){
-        for(AppInfo ri: appList){
-            if(ri.getPackageName().equals(packageName))
+    private AppInfo getApp(String packageName) {
+        for (AppInfo ri : appList) {
+            if (ri.getPackageName().equals(packageName))
                 return ri;
         }
         return null;
     }
 
-    public void setMaxCount( int value )
-    {
+    public void setMaxCount(int value) {
         this.maxCount = value;
     }
 
-    public int getMaxCount( )
-    {
+    public int getMaxCount() {
         return this.maxCount;
     }
 
-    public int getRecentAppCount( )
-    {
+    public int getRecentAppCount() {
         return this.recentApps.size();
     }
 
-    public AppInfo getRecentApp(int position)
-    {
+    public AppInfo getRecentApp(int position) {
         return this.recentApps.get(position);
     }
 
-    public ArrayList<Drawable> getIcons(PackageManager pm)
-    {
+    public ArrayList<Drawable> getIcons(PackageManager pm) {
         ArrayList<Drawable> icons = new ArrayList<>();
-        for(AppInfo app : this.recentApps)
-        {
+        for (AppInfo app : this.recentApps) {
             icons.add(app.getIcon(pm));
         }
         return icons;
     }
 
-    public boolean contains(String app)
-    {
+    public boolean contains(String app) {
         return getApp(app) != null || app.equals(launcherPackage);
     }
 
-    public void updateList(List<String> recentApps){
+    public void updateList(List<String> recentApps) {
         this.recentApps = new ArrayList<>();
         AppInfo appInfo;
         boolean match = false;
-        for (String appName: recentApps){
+        for (String appName : recentApps) {
             appInfo = getApp(appName);
-            if(!match){
+            if (!match) {
                 match = true;
                 currentAppIsLauncher = currentAppIsLauncher(appName);
                 continue;
             }
-            if(appInfo != null && !this.recentApps.contains(appInfo)) {
+            if (appInfo != null && !this.recentApps.contains(appInfo)) {
                 this.recentApps.add(appInfo);
             }
-            if(this.recentApps.size() == maxCount)
+            if (this.recentApps.size() == maxCount)
                 break;
         }
 
     }
 
-    private boolean currentAppIsLauncher(String packageName)
-    {
-        return  packageName.equals(launcherPackage);
+    private boolean currentAppIsLauncher(String packageName) {
+        return packageName.equals(launcherPackage);
     }
 }

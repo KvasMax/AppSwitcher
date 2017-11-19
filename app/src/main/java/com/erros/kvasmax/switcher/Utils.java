@@ -20,16 +20,16 @@ public class Utils {
         List<ResolveInfo> ordinaryApps = packageManager.queryIntentActivities(intent, 0);
         intent.addCategory(Intent.CATEGORY_HOME);
         List<ResolveInfo> lauchers = packageManager.queryIntentActivities(intent, 0);
-        for(int i = 0; i < ordinaryApps.size();i++){
-            for(ResolveInfo ri: lauchers) {
-                if(ordinaryApps.get(i).activityInfo.packageName.contains(ri.activityInfo.packageName)) {
+        for (int i = 0; i < ordinaryApps.size(); i++) {
+            for (ResolveInfo ri : lauchers) {
+                if (ordinaryApps.get(i).activityInfo.packageName.contains(ri.activityInfo.packageName)) {
                     ordinaryApps.remove(i);
                     continue;
                 }
             }
         }
         List<AppInfo> appList = new ArrayList<>(ordinaryApps.size());
-        for(ResolveInfo ri: ordinaryApps){
+        for (ResolveInfo ri : ordinaryApps) {
             appList.add(new AppInfo(ri.activityInfo.applicationInfo.packageName, ri.activityInfo.name, ri.loadLabel(packageManager).toString()));
         }
         return appList;

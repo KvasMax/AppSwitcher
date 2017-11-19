@@ -11,7 +11,7 @@
     <string name="allow_drag">Разрешить перетаскивание</string>
     <string name="transition_animation">Анимация перехода между приложениями</string>
     <string name="vibration">Вибрация при переключении</string>
-    <string name="avoid_keyboard">Размещение позади клавиатуры</string>
+    <string name="avoid_keyboard">Избегать перекрытия клавиатуры</string>
     <string name="choose_color">Выбрать цвет и прозрачность</string>
     <string name="make_invisible">Сделать невидимой</string>
     <string name="button_ok">OK</string>
@@ -32,10 +32,12 @@
     <string-array name="app_ver_anim">
         <item>Слево напрво</item>
         <item>Справо налево</item>
+        <item>Всплытие</item>
     </string-array>
     <string-array name="app_hor_anim">
         <item>Снизу вверх</item>
         <item>Сверху вниз</item>
+        <item>Всплытие</item>
     </string-array>
     <string-array name="button_positions">
         <item>Снизу</item>
