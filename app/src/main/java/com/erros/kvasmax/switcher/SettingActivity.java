@@ -1,18 +1,15 @@
 package com.erros.kvasmax.switcher;
 
-import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
@@ -59,8 +56,7 @@ public class SettingActivity extends AppCompatActivity {
     final static int USAGE_ACCESS_PERMISSION_REQUEST_CODE = 101;
     final static String VERSION_CODE = "VERSION_CODE";
 
-    private SharedPreferences settings;
-    private SharedPreferences.Editor editor;
+    private SettingsManager settingsManager;
 
     private Spinner buttonPosition;
     private Spinner appOrder;
@@ -184,8 +180,7 @@ public class SettingActivity extends AppCompatActivity {
     }
 
     public void initialise() {
-        settings = getSharedPreferences(SwitcherApplication.APP_PREFERENCES, Context.MODE_PRIVATE);
-        editor = settings.edit();
+        settingsManager = SettingsManager.getInstance(this);
 
        /* if(settings.contains(VERSION_CODE))
         {
@@ -220,12 +215,12 @@ public class SettingActivity extends AppCompatActivity {
         loadSettings();
         setListeners();
 
-        if (isFirstServiceLaunch()) {
+        if (settingsManager.isFirstServiceLaunch()) {
             serviceLauncher.setChecked(true);
         } else {
             checkPermissions();
         }
-        if (isFirstAppLaunch()) {
+        if (settingsManager.isFirstAppLaunch()) {
             showTip();
         }
 
@@ -260,8 +255,7 @@ public class SettingActivity extends AppCompatActivity {
         blacklistDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
             public void onCancel(DialogInterface dialogInterface) {
-                editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, blacklist);
-                editor.apply();
+                settingsManager.saveBlacklist(blacklist);
                 sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
                 sendParamWithCheck(SwitcherService.ACTION_UPDATE_BLACKLIST, 0);
             }
@@ -346,8 +340,7 @@ public class SettingActivity extends AppCompatActivity {
         transparentColor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, Color.TRANSPARENT);
-                editor.apply();
+                settingsManager.saveButtonColor(Color.TRANSPARENT);
                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
             }
         });
@@ -413,12 +406,12 @@ public class SettingActivity extends AppCompatActivity {
 
         chooseColor.setOnClickListener(new View.OnClickListener() {
 
-            int defaultColor = ContextCompat.getColor(SettingActivity.this, R.color.defaultColor);
+            int defaultColor = settingsManager.getButtonDefaultColor();
             int oldColor = defaultColor;
 
             @Override
             public void onClick(View view) {
-                oldColor = settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, defaultColor);
+                oldColor = settingsManager.getButtonColor();
                 sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
                 colorPickerDialog = ColorPickerDialogBuilder
                         .with(SettingActivity.this)
@@ -429,8 +422,7 @@ public class SettingActivity extends AppCompatActivity {
                         .setPositiveButton(getResources().getString(R.string.button_ok), new ColorPickerClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
-                                editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, selectedColor);
-                                editor.apply();
+                                settingsManager.saveButtonColor(selectedColor);
                                 sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
                             }
                         })
@@ -558,28 +550,19 @@ public class SettingActivity extends AppCompatActivity {
         startService(intent);
     }
 
-    private boolean isFirstAppLaunch() {
-        return !settings.contains(SwitcherApplication.APP_PREFERENCES_APP_COUNT);
-    }
-
-    private boolean isFirstServiceLaunch() {
-        return !settings.contains(SwitcherApplication.APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
-    }
-
     private void loadSettings() {
 
         serviceLauncher.setChecked(isSwitcherServiceRunning());
-        thicknessChange.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, 40));
-        lengthChange.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, 80));
-        appCount.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, 4));
-        appIconSize.setProgress(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, 35));
+        thicknessChange.setProgress(settingsManager.getButttonThickness());
+        lengthChange.setProgress(settingsManager.getButtonLength());
+        appCount.setProgress(settingsManager.getAppCount());
+        appIconSize.setProgress(settingsManager.getAppIconSize());
         buttonPosition.setTag(0);
-        buttonPosition.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, 1), false);
+        buttonPosition.setSelection(settingsManager.getButtonPosition(),false);
         appOrder.setTag(0);
-        appOrder.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, 1), false);
+        appOrder.setSelection(settingsManager.getAppOrder(), false);
         appLayout.setTag(0);
-        appLayout.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, 0), false);
-
+        appLayout.setSelection(settingsManager.getAppLayout(), false);
 
         switch (appLayout.getSelectedItemPosition()) {
             case WindowContainer.VERTICAL:
@@ -590,14 +573,12 @@ public class SettingActivity extends AppCompatActivity {
                 break;
         }
         appAnim.setTag(0);
-        appAnim.setSelection(settings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, 1), false);
+        appAnim.setSelection(settingsManager.getAppBarAnimation(), false);
 
-        enableAnimation.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, true));
-        enableVibration.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, false));
-        avoidKeyboard.setChecked(settings.getBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false));
-        dragButton.setChecked(settings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
-        dragAppPanel.setChecked(settings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
-        startOnBoot.setChecked(settings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT));
+        enableAnimation.setChecked(settingsManager.isAnimatingSwitching());
+        enableVibration.setChecked(settingsManager.isVibratingOnSwitch());
+        avoidKeyboard.setChecked(settingsManager.isAvoidingKeyboard());
+        startOnBoot.setChecked(settingsManager.isStartingOnBoot());
 
 
         appList = Utils.getApps(getPackageManager());
@@ -607,11 +588,10 @@ public class SettingActivity extends AppCompatActivity {
                 return first.getName().compareTo(second.getName());
             }
         });
-        if (!settings.contains(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST)) {
-            editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>(appList.size() / 2));
-            editor.apply();
+        if (settingsManager.getBlacklist() == null) {
+            settingsManager.saveBlacklist(new HashSet<String>(appList.size() / 2));
         }
-        blacklist = settings.getStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>());
+        blacklist = settingsManager.getBlacklist();
         adapterBlacklist = new BaseAdapter() {
             @Override
             public int getCount() {
@@ -649,25 +629,21 @@ public class SettingActivity extends AppCompatActivity {
     }
 
     private void saveSettings() {
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, thicknessChange.getProgress());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, lengthChange.getProgress());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, buttonPosition.getSelectedItemPosition());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, appCount.getProgress());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, appIconSize.getProgress());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, appOrder.getSelectedItemPosition());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, appLayout.getSelectedItemPosition());
-        editor.putInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, appAnim.getSelectedItemPosition());
-        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, enableAnimation.isChecked());
-        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, enableVibration.isChecked());
-        editor.putBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, avoidKeyboard.isChecked());
-        if (startOnBoot.isChecked())
-            editor.putInt(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT, 0);
-        else editor.remove(SwitcherApplication.APP_PREFERENCES_COMMON_START_ON_BOOT);
-        editor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, dragButton.isChecked());
-        editor.putBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, dragAppPanel.isChecked());
-        editor.putStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, blacklist);
-
-        editor.apply();
+        settingsManager.saveButtonThickness(thicknessChange.getProgress());
+        settingsManager.saveButtonLength(lengthChange.getProgress());
+        settingsManager.saveButtonPosition(buttonPosition.getSelectedItemPosition());
+        settingsManager.saveAppCount(appCount.getProgress());
+        settingsManager.saveAppIconSize(appIconSize.getProgress());
+        settingsManager.saveAppOrder(appOrder.getSelectedItemPosition());
+        settingsManager.saveAppLayout(appLayout.getSelectedItemPosition());
+        settingsManager.saveAppBarAnimation(appAnim.getSelectedItemPosition());
+        settingsManager.saveAnimatingSwitching(enableAnimation.isChecked());
+        settingsManager.saveVibratingOnSwitch(enableVibration.isChecked());
+        settingsManager.saveAvoidingKeyboard(avoidKeyboard.isChecked());
+        settingsManager.saveStartingOnBoot(startOnBoot.isChecked());
+        settingsManager.saveBlacklist(blacklist);
+        settingsManager.saveDragableFloatingButton(dragButton.isChecked());
+        settingsManager.saveDragableAppBar(dragAppPanel.isChecked());
     }
 
     private void sendParamWithCheck(String action, int param) {
@@ -681,16 +657,6 @@ public class SettingActivity extends AppCompatActivity {
         in.setAction(action);
         in.putExtra(SwitcherService.PARAM, param);
         startService(in);
-    }
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isSwitcherServiceRunning() {
@@ -782,7 +748,7 @@ public class SettingActivity extends AppCompatActivity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (checkPermissions() && isFirstServiceLaunch()) {
+        if (checkPermissions() && settingsManager.isFirstServiceLaunch()) {
             serviceLauncher.setChecked(true);
         }
     }

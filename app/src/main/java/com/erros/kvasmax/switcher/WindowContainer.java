@@ -412,18 +412,8 @@ public class WindowContainer {
     }
 
     private void recycleViews() {
-        buttonView.post(new Runnable() {
-            @Override
-            public void run() {
-                windowManager.updateViewLayout(buttonView, buttonParams);
-            }
-        });
-        iconBar.post(new Runnable() {
-            @Override
-            public void run() {
-                windowManager.updateViewLayout(iconBar, iconBarParams);
-            }
-        });
+        windowManager.updateViewLayout(buttonView, buttonParams);
+        windowManager.updateViewLayout(iconBar, iconBarParams);
 
     }
 
@@ -607,6 +597,7 @@ public class WindowContainer {
                 break;
         }
         calculateDistance();
+        service.saveWindowPositions();
         recycleViews();
     }
 

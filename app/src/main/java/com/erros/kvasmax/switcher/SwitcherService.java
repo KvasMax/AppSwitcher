@@ -9,7 +9,6 @@ import android.app.Service;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Point;
@@ -19,7 +18,6 @@ import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
 import android.view.WindowManager;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -27,9 +25,7 @@ import java.util.Set;
 public class SwitcherService extends Service implements ISwitcherService {
 
 
-    private SharedPreferences mSettings;
-    private SharedPreferences.Editor mEditor;
-
+    private SettingsManager settingsManager;
 
     AppSwitcher appSwitcher;
     WindowContainer winContainer;
@@ -76,17 +72,15 @@ public class SwitcherService extends Service implements ISwitcherService {
 
         //DaggerSwitcherComponent.builder().switcherModule(new SwitcherModule(getApplication())).build().inject(this);
 
-        mSettings = getApplication().getSharedPreferences(SwitcherApplication.APP_PREFERENCES, Context.MODE_PRIVATE);
-        mEditor = mSettings.edit();
+        settingsManager = SettingsManager.getInstance(this);
+        settingsManager.serviceWasLaunched();
         initialise();
         update();
-        mEditor.putBoolean(SwitcherApplication.APP_PREFERENCES_SERVICE_FIRST_LAUNCH, true);
-        mEditor.apply();
     }
 
     private void initialise() {
         int maxCount = 5;
-        maxCount = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_COUNT, maxCount) + 1;
+        maxCount = settingsManager.getAppCount() + 1;
 
         createAppSwitcher(maxCount);
         createWindowContainer(maxCount);
@@ -96,9 +90,9 @@ public class SwitcherService extends Service implements ISwitcherService {
         PackageManager packageManager = getApplication().getPackageManager();
         UsageStatsManager usageStatsManager = (UsageStatsManager) getApplication().getSystemService(Activity.USAGE_STATS_SERVICE);
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        boolean useAnimation = mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_ANIMATION, true);
-        boolean useVibration = mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_APP_USE_VIBRATION, false);
-        Set<String> blacklist = mSettings.getStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new LinkedHashSet<String>());
+        boolean useAnimation = settingsManager.isAnimatingSwitching();
+        boolean useVibration = settingsManager.isVibratingOnSwitch();
+        Set<String> blacklist = settingsManager.getBlacklist();
 
         appSwitcher = new AppSwitcher(getBaseContext(), usageStatsManager, packageManager, vibrator, maxCount, useAnimation, useVibration, blacklist);
     }
@@ -124,23 +118,26 @@ public class SwitcherService extends Service implements ISwitcherService {
         boolean avoidKeyboard = true;
 
         pointCount = getResources().getInteger(R.integer.point_count);
-        buttonPosition = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_POSITION, buttonPosition);
-        buttonThickness = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_THICKNESS, buttonThickness);
-        buttonLength = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_LENGTH, buttonLength);
-        butPortraitY = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_Y_PORTRAIT, butPortraitY);
-        butPortraitX = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_X_PORTRAIT, butPortraitX);
-        butLandscapeY = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_Y_LANDSCAPE, butLandscapeY);
-        butLandscapeX = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_X_LANDSCAPE, butLandscapeX);
-        distanceY = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_Y_DISTANCE, distanceY);
-        distanceX = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_X_DISTANCE, distanceX);
-        iconSize = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ICON_SIZE, iconSize);
-        avoidKeyboard = mSettings.getBoolean(SwitcherApplication.APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, false);
-        appOrder = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ORDER, 0) == 0;
-        appLayout = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_LAYOUT, appLayout);
-        appAnim = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_APP_ANIM, appAnim);
-        buttonColor = mSettings.getInt(SwitcherApplication.APP_PREFERENCES_BUTTON_COLOR, buttonColor);
+        buttonPosition = settingsManager.getButtonPosition();
+        buttonThickness = settingsManager.getButttonThickness();
+        buttonLength = settingsManager.getButtonLength();
+        Point coordinates = settingsManager.getButtonPortraitCoordinates();
+        butPortraitY = coordinates.y;
+        butPortraitX = coordinates.x;
+        coordinates = settingsManager.getButtonLandscapeCoordinates();
+        butLandscapeY = coordinates.y;
+        butLandscapeX = coordinates.x;
+        coordinates = settingsManager.getAppBarDistance();
+        distanceY = coordinates.y;
+        distanceX = coordinates.x;
+        iconSize = settingsManager.getAppIconSize();
+        avoidKeyboard = settingsManager.isAvoidingKeyboard();
+        appOrder = settingsManager.getAppOrder() == 0;
+        appLayout = settingsManager.getAppLayout();
+        appAnim = settingsManager.getAppBarAnimation();
+        buttonColor = settingsManager.getButtonColor();
 
-        if (mSettings.contains(SwitcherApplication.APP_PREFERENCES_BUTTON_X_PORTRAIT)) {
+        if (settingsManager.containsCoordinates()) {
             winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount,
                     appLayout, appOrder, buttonPosition, buttonThickness, buttonLength, butPortraitX, butPortraitY, butLandscapeX,
                     butLandscapeY, iconSize, distanceX, distanceY, appAnim, getResources().getConfiguration().orientation, buttonColor, avoidKeyboard);
@@ -148,8 +145,8 @@ public class SwitcherService extends Service implements ISwitcherService {
             winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount, getResources().getConfiguration().orientation,
                     appLayout, appOrder, appAnim, buttonPosition, buttonThickness, buttonLength, buttonColor, iconSize, avoidKeyboard);
         }
-        winContainer.dragFloatingButton(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_BUTTON, false));
-        winContainer.dragIconBar(mSettings.getBoolean(SwitcherService.ACTION_ALLOW_DRAG_APPS, false));
+        winContainer.dragFloatingButton(settingsManager.isDragableFloatingButton());
+        winContainer.dragIconBar(settingsManager.isDragableAppBar());
     }
 
 
@@ -202,7 +199,7 @@ public class SwitcherService extends Service implements ISwitcherService {
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ANIM)) {
                 winContainer.setAnimation(param);
             } else if (intent.getAction().equals(ACTION_UPDATE_BLACKLIST)) {
-                appSwitcher.updateBlacklist(mSettings.getStringSet(SwitcherApplication.APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<String>()));
+                appSwitcher.updateBlacklist(settingsManager.getBlacklist());
             }
         }
         return START_STICKY;
@@ -246,15 +243,11 @@ public class SwitcherService extends Service implements ISwitcherService {
 
     public void saveWindowPositions() {
         Point pos = winContainer.getButtonPortraitPosition();
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_X_PORTRAIT, pos.x);
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_Y_PORTRAIT, pos.y);
+        settingsManager.saveButtonPortraitCoordinates(pos);
         pos = winContainer.getButtonLandscapePosition();
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_X_LANDSCAPE, pos.x);
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_BUTTON_Y_LANDSCAPE, pos.y);
+        settingsManager.saveButtonLandscapeCoordinates(pos);
         pos = winContainer.getIconBarDistance();
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_X_DISTANCE, pos.x);
-        mEditor.putInt(SwitcherApplication.APP_PREFERENCES_APP_Y_DISTANCE, pos.y);
-        mEditor.apply();
+        settingsManager.saveAppBarDistance(pos);
     }
 
 }
