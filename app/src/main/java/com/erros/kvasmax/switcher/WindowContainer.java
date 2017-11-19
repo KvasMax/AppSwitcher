@@ -65,6 +65,7 @@ public class WindowContainer {
     private int iconSize;
     private int iconSizeInc;
     private int iconSizeMin;
+    private int padding;
 
     //private int incX;
     //private int incY;
@@ -201,18 +202,18 @@ public class WindowContainer {
         changeIconBarBackground(iconBarIsVisible);
 
         GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
-        Rect margins = new Rect();
-        drawable.getPadding(margins);
+        Rect paddings = new Rect();
+        drawable.getPadding(paddings);
         int width = 0, height = 0;
-        int padding = margins.top * 2;
+        padding = paddings.top;
         switch (iconBar.getOrientation()) {
             case LinearLayout.HORIZONTAL:
-                width = iconSize * maxCount + padding;
-                height = iconSize + padding;
+                width = (iconSize + padding * 2) * maxCount + padding * 2;
+                height = iconSize + 4 * padding;
                 break;
             case LinearLayout.VERTICAL:
-                height = iconSize * maxCount + padding;
-                width = iconSize + padding;
+                height = (iconSize + padding * 2) * maxCount + padding * 2;
+                width = iconSize + 4 * padding;
                 break;
         }
         int appX = buttonParams.x - distanceX, appY = buttonParams.y - distanceY;
@@ -220,7 +221,8 @@ public class WindowContainer {
         iconBarParams = getLayoutParams(appX, appY, width, height);
         iconBarParams.gravity = buttonParams.gravity;
         for (ImageView image : iconViews) {
-            iconBar.addView(image, new LinearLayout.LayoutParams(iconSize, iconSize));
+            image.setPadding(padding, padding, padding, padding);
+            iconBar.addView(image, new LinearLayout.LayoutParams(iconSize + padding * 2, iconSize + padding * 2));
         }
         changeIconBarDim(iconBarIsVisible);
         if (isNewBar) {
