@@ -1,5 +1,6 @@
 package com.erros.kvasmax.switcher;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -15,10 +16,13 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.ScaleAnimation;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by user on 07.09.2017.
@@ -50,6 +54,7 @@ public class WindowContainer {
     // iconViews
     private LinearLayout iconBar;
     private ArrayList<ImageView> iconViews;
+    private ArrayList<View> backViews;
     private WindowManager.LayoutParams iconBarParams;
 
     private Animation firstAnim;
@@ -66,6 +71,7 @@ public class WindowContainer {
     private int iconSizeInc;
     private int iconSizeMin;
     private int padding;
+    private int perIcon;
 
     //private int incX;
     //private int incY;
@@ -80,7 +86,7 @@ public class WindowContainer {
     private int iconBarLayout;
     private int iconAnim;
 
-    public boolean iconBarIsVisible = true;
+    public boolean iconBarNeedsToBeVisible = true;
     private boolean isDraggableFloatingButton = false;
     private boolean isDraggableIconBar = false;
     private boolean avoidKeyboard = false;
@@ -97,6 +103,13 @@ public class WindowContainer {
     int distanceY;
 
     private int statusBarHeight = 0;
+
+    private int animationDuration = 100;
+    private float backlightMaxSize = 1f;
+    private float backlightMinSize = 0.5f;
+
+    private float iconMaxSize = 1f;
+    private float iconMinSize = 0.75f;
 
 
     public WindowContainer(Context context, ISwitcherService service, WindowManager windowManager, int maxCount,
@@ -188,7 +201,8 @@ public class WindowContainer {
 
     private void initialiseIconBar(boolean isNewBar) {
 
-        iconViews = new ArrayList<>();
+        iconViews = new ArrayList<>(maxCount);
+        backViews = new ArrayList<>(maxCount);
         for (int i = 0; i < maxCount; i++) {
             iconViews.add(new ImageView(context));
         }
@@ -199,32 +213,51 @@ public class WindowContainer {
             iconBar.setBackgroundResource(R.drawable.rounded_corners);
         }
         iconBar.setOrientation(iconBarLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        changeIconBarBackground(iconBarIsVisible);
+        changeIconBarBackground(iconBarNeedsToBeVisible);
 
         GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
         Rect paddings = new Rect();
         drawable.getPadding(paddings);
         int width = 0, height = 0;
+
         padding = paddings.top;
+        int iconActualSize = iconSize + padding * 2;
+
         switch (iconBar.getOrientation()) {
             case LinearLayout.HORIZONTAL:
-                width = (iconSize + padding * 2) * maxCount + padding * 2;
-                height = iconSize + 4 * padding;
+                width = iconActualSize * maxCount + padding * 2;
+                height = iconActualSize + 2 * padding;
+                perIcon = width / maxCount;
                 break;
             case LinearLayout.VERTICAL:
-                height = (iconSize + padding * 2) * maxCount + padding * 2;
-                width = iconSize + 4 * padding;
+                height = iconActualSize * maxCount + padding * 2;
+                width = iconActualSize + 2 * padding;
+                perIcon = height / maxCount;
                 break;
         }
         int appX = buttonParams.x - distanceX, appY = buttonParams.y - distanceY;
 
         iconBarParams = getLayoutParams(appX, appY, width, height);
         iconBarParams.gravity = buttonParams.gravity;
+
+        List<FrameLayout> containers = new ArrayList<>(maxCount);
         for (ImageView image : iconViews) {
+            FrameLayout container = new FrameLayout(context);
+            containers.add(container);
+
+            View background = new View(context);
+            backViews.add(background);
+            background.setVisibility(View.GONE);
+            background.setBackgroundResource(R.drawable.circle);
+            container.addView(background, new FrameLayout.LayoutParams(iconActualSize, iconActualSize));
+
             image.setPadding(padding, padding, padding, padding);
-            iconBar.addView(image, new LinearLayout.LayoutParams(iconSize + padding * 2, iconSize + padding * 2));
+            container.addView(image, new LinearLayout.LayoutParams(iconActualSize, iconActualSize));
         }
-        changeIconBarDim(iconBarIsVisible);
+        for (FrameLayout container : containers) {
+            iconBar.addView(container, new LinearLayout.LayoutParams(iconActualSize, iconActualSize));
+        }
+        changeIconBarDim(iconBarNeedsToBeVisible);
         if (isNewBar) {
 
             windowManager.addView(iconBar, iconBarParams);
@@ -284,14 +317,14 @@ public class WindowContainer {
         buttonView.setBackgroundColor(buttonColor);
         buttonView.setBackgroundResource(R.drawable.rounded_corners);
         GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
-
         drawable.setColor(buttonColor);
         buttonView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
-            private float initialTouchX;
-            private float initialTouchY;
+            private float touchX;
+            private float touchY;
             boolean visible = false;
+            private int checkedIcon = -1;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -300,39 +333,31 @@ public class WindowContainer {
                     case MotionEvent.ACTION_DOWN:
                         initialX = buttonParams.x;
                         initialY = buttonParams.y;
-                        initialTouchX = event.getRawX();
-                        initialTouchY = event.getRawY();
+                        touchX = event.getRawX();
+                        touchY = event.getRawY();
                         break;
                     case MotionEvent.ACTION_UP:
                         if (!isDraggableFloatingButton) {
-                            initialTouchX = event.getRawX();
-                            initialTouchY = event.getRawY();
+                            touchX = event.getRawX();
+                            touchY = event.getRawY();
                             int width = iconBar.getWidth();
                             int height = iconBar.getHeight();
+                            checkedIcon = -1;
                             if (visible) {
-                                for (ImageView im : iconViews) {
-                                    im.setVisibility(View.VISIBLE);
-                                    im.startAnimation(secondAnim);
+                                for (ImageView icon : iconViews) {
+                                    icon.clearAnimation();
+                                    icon.startAnimation(secondAnim);
+                                }
+                                for (View back : backViews) {
+                                    back.clearAnimation();
+                                    back.setVisibility(View.INVISIBLE);
                                 }
                             }
                             int[] location = new int[2];
                             iconBar.getLocationOnScreen(location);
-                            if (initialTouchX > location[0]
-                                    && initialTouchX < location[0] + width
-                                    && initialTouchY > location[1]
-                                    && initialTouchY < location[1] + height) {
+                            if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
 
-                                int numIcon = 0, perIcon = 0;
-                                switch (iconBarLayout) {
-                                    case VERTICAL:
-                                        perIcon = height / iconViews.size();
-                                        numIcon = (int) (height - (initialTouchY - location[1])) / perIcon;
-                                        break;
-                                    case HORIZONTAL:
-                                        perIcon = width / iconViews.size();
-                                        numIcon = (int) (width - (initialTouchX - location[0])) / perIcon;
-                                        break;
-                                }
+                                int numIcon = selectedIcon(location[0], location[1], width, height, touchX, touchY);
                                 if (!iconOrder) numIcon = maxCount - numIcon - 1;
                                 service.startApplication(numIcon);
 
@@ -345,15 +370,15 @@ public class WindowContainer {
                         }
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        int[] location = new int[2];
-                        buttonView.getLocationOnScreen(location);
-                        if (!isDraggableFloatingButton) {
-                            if (!visible) {
 
-                                if (event.getRawY() < location[1]
-                                        || event.getRawY() > location[1] + buttonParams.height
-                                        || event.getRawX() < location[0]
-                                        || event.getRawX() > location[0] + buttonParams.width) {
+                        int[] location = new int[2];
+                        if (!isDraggableFloatingButton) {
+                            touchX = event.getRawX();
+                            touchY = event.getRawY();
+                            if (!visible) {
+                                buttonView.getLocationOnScreen(location);
+                                if (!isInsideView(location[0], location[1], buttonParams.width, buttonParams.height, touchX, touchY)) {
+
                                     service.updateAppList();
                                     iconBar.setVisibility(View.VISIBLE);
                                     for (ImageView im : iconViews) {
@@ -362,11 +387,34 @@ public class WindowContainer {
                                     visible = true;
                                 }
 
+                            } else {
+                                iconBar.getLocationOnScreen(location);
+                                int width = iconBarParams.width;
+                                int height = iconBarParams.height;
+                                if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
+                                    int numIcon = maxCount - 1 - selectedIcon(location[0], location[1], width, height, touchX, touchY);
+                                    if (numIcon != checkedIcon) {
+                                        showBacklightView(backViews.get(numIcon));
+                                        drownView(iconViews.get(numIcon));
+                                        if (checkedIcon >= 0) {
+                                            hideBacklightView(backViews.get(checkedIcon));
+                                            emergeView(iconViews.get(checkedIcon));
+                                        }
+
+                                        checkedIcon = numIcon;
+                                    }
+                                } else {
+                                    if (checkedIcon >= 0) {
+                                        hideBacklightView(backViews.get(checkedIcon));
+                                        emergeView(iconViews.get(checkedIcon));
+                                        checkedIcon = -1;
+                                    }
+                                }
                             }
                         } else {
 
-                            int newX = initialX - (int) (initialTouchX - event.getRawX());
-                            int newY = initialY - (int) (initialTouchY - event.getRawY());
+                            int newX = initialX - (int) (touchX - event.getRawX());
+                            int newY = initialY - (int) (touchY - event.getRawY());
                             if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonParams.width) {
                                 buttonParams.x = newX;
                                 buttonParams.y = 0;
@@ -394,6 +442,81 @@ public class WindowContainer {
         }
 
         windowManager.addView(buttonView, buttonParams);
+    }
+
+    private void drownView(View view) {
+        ScaleAnimation animation = new ScaleAnimation(iconMaxSize, iconMinSize, iconMaxSize, iconMinSize,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animation.setDuration(animationDuration);
+        animation.setFillAfter(true);
+        animation.setFillBefore(true);
+        view.clearAnimation();
+        view.startAnimation(animation);
+    }
+
+    private void emergeView(View view) {
+        ScaleAnimation animation = new ScaleAnimation(iconMinSize, iconMaxSize, iconMinSize, iconMaxSize,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animation.setDuration(animationDuration);
+        animation.setFillAfter(true);
+        animation.setFillBefore(true);
+        view.clearAnimation();
+        view.startAnimation(animation);
+    }
+
+    private void showBacklightView(View view) {
+        view.setVisibility(View.VISIBLE);
+        ScaleAnimation animation = new ScaleAnimation(backlightMinSize, backlightMaxSize, backlightMinSize, backlightMaxSize,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animation.setDuration(animationDuration);
+        animation.setFillAfter(true);
+        animation.setFillBefore(true);
+        view.clearAnimation();
+        view.startAnimation(animation);
+    }
+
+    private void hideBacklightView(final View view) {
+        ScaleAnimation animation = new ScaleAnimation(backlightMaxSize, backlightMinSize, backlightMaxSize, backlightMinSize,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animation.setDuration(animationDuration);
+        animation.setFillAfter(true);
+        animation.setFillBefore(false);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                view.clearAnimation();
+                view.setVisibility(View.INVISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        view.clearAnimation();
+        view.startAnimation(animation);
+    }
+
+    private boolean isInsideView(int x, int y, int width, int height, float touchX, float touchY) {
+        return touchX > x
+                && touchX < x + width
+                && touchY > y
+                && touchY < y + height;
+    }
+
+    private int selectedIcon(int x, int y, int width, int height, float touchX, float touchY) {
+        switch (iconBarLayout) {
+            case VERTICAL:
+            default:
+                return (int) (height - (touchY - y)) / perIcon;
+            case HORIZONTAL:
+                return (int) (width - (touchX - x)) / perIcon;
+        }
     }
 
     private void roundPosition() {
@@ -533,7 +656,7 @@ public class WindowContainer {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                if (!iconBarIsVisible) {
+                if (!iconBarNeedsToBeVisible) {
                     iconBar.setVisibility(View.GONE);
                 }
 
@@ -548,13 +671,13 @@ public class WindowContainer {
 
     public void showIconBar() {
         changeIconBarBackground(true);
-        iconBarIsVisible = true;
+        iconBarNeedsToBeVisible = true;
         recycleViews();
     }
 
     public void hideIconBar() {
         changeIconBarBackground(false);
-        iconBarIsVisible = false;
+        iconBarNeedsToBeVisible = false;
         recycleViews();
     }
 

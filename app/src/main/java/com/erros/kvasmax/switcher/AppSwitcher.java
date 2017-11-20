@@ -114,7 +114,7 @@ public class AppSwitcher {
                 Intent intent = //getPackageManager().getLaunchIntentForPackage(appInf.getPackageName());
                         new Intent(Intent.ACTION_MAIN);
                 intent.setClassName(appInf.getPackageName(), appInf.getClassname());
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); //TODO cause relaunch sometimes
                 intent.addCategory(Intent.CATEGORY_LAUNCHER);
                 if (appContainer.currentAppIsLauncher) {
                     PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
