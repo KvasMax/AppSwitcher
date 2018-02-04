@@ -19,7 +19,7 @@
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="button_hide">Hide</string>
-    <string name="start_service">Enable</string>
+    <string name="start_service">Launch</string>
     <string name="grant">Grant</string>
     <string-array name="apporder">
         <item>Direct</item>

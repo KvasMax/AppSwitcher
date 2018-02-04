@@ -1,6 +1,5 @@
 package com.erros.kvasmax.switcher;
 
-import android.animation.Animator;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -30,67 +29,54 @@ import java.util.List;
 
 public class WindowContainer {
 
-    private final int BUTTON_POSITION_BOTTOM = 0;
-    private final int BUTTON_POSITION_RIGHT = 1;
-    private final int BUTTON_POSITION_LEFT = 2;
-
-    private final int APP_ANIMATION_SLIDE = 0;
-    private final int APP_ANIMATION_SLIDE_ANOTHER = 1;
-    private final int APP_ANIMATION_EMERGE = 2;
-
-
     // layouts
     public static final int VERTICAL = 0;
     public static final int HORIZONTAL = 1;
-
+    private final int BUTTON_POSITION_BOTTOM = 0;
+    private final int BUTTON_POSITION_RIGHT = 1;
+    private final int BUTTON_POSITION_LEFT = 2;
+    private final int APP_ANIMATION_SLIDE = 0;
+    private final int APP_ANIMATION_SLIDE_ANOTHER = 1;
+    private final int APP_ANIMATION_EMERGE = 2;
+    public boolean iconBarNeedsToBeVisible = true;
+    int distanceX;
+    int distanceY;
     private WindowManager windowManager;
     private Context context;
     private ISwitcherService service;
-
     // touch button
     private ImageView buttonView;
     private WindowManager.LayoutParams buttonParams;
-
     // iconViews
     private LinearLayout iconBar;
     private ArrayList<ImageView> iconViews;
     private ArrayList<View> backViews;
     private WindowManager.LayoutParams iconBarParams;
-
     private Animation firstAnim;
     private Animation secondAnim;
-
-
     private Point screenSize = new Point();
     private Point fullScreenSize = new Point();
     private int pointCount;
     private int maxCount;
-
     // icon
     private int iconSize;
     private int iconSizeInc;
-    private int iconSizeMin;
-    private int padding;
-    private int perIcon;
 
     //private int incX;
     //private int incY;
     //private int incWidth;
     //private int incHeight;
-
+    private int iconSizeMin;
+    private int padding;
+    private int perIcon;
     private int incrementLength;
     private int incrementThickness;
-
-
     private boolean iconOrder;
     private int iconBarLayout;
     private int iconAnim;
-
-    public boolean iconBarNeedsToBeVisible = true;
     private boolean isDraggableFloatingButton = false;
     private boolean isDraggableIconBar = false;
     private boolean avoidKeyboard = false;
-
     private int screenOrientation;
     private int buttonPosition;
     private int buttonPortraitX;
@@ -98,10 +84,6 @@ public class WindowContainer {
     private int buttonLandscapeX;
     private int buttonLandscapeY;
     private int buttonColor = Color.TRANSPARENT;
-
-    int distanceX;
-    int distanceY;
-
     private int statusBarHeight = 0;
 
     private int animationDuration = 100;
@@ -227,12 +209,12 @@ public class WindowContainer {
             case LinearLayout.HORIZONTAL:
                 width = iconActualSize * maxCount + padding * 2;
                 height = iconActualSize + 2 * padding;
-                perIcon = width / maxCount;
+                perIcon = width / maxCount + 1;
                 break;
             case LinearLayout.VERTICAL:
                 height = iconActualSize * maxCount + padding * 2;
                 width = iconActualSize + 2 * padding;
-                perIcon = height / maxCount;
+                perIcon = height / maxCount + 1;
                 break;
         }
         int appX = buttonParams.x - distanceX, appY = buttonParams.y - distanceY;
@@ -319,11 +301,11 @@ public class WindowContainer {
         GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
         drawable.setColor(buttonColor);
         buttonView.setOnTouchListener(new View.OnTouchListener() {
+            boolean visible = false;
             private int initialX;
             private int initialY;
             private float touchX;
             private float touchY;
-            boolean visible = false;
             private int checkedIcon = -1;
 
             @Override
@@ -337,6 +319,7 @@ public class WindowContainer {
                         touchY = event.getRawY();
                         break;
                     case MotionEvent.ACTION_UP:
+                        changeFlagsToAvoidKeyboard(buttonParams.flags, avoidKeyboard);
                         if (!isDraggableFloatingButton) {
                             touchX = event.getRawX();
                             touchY = event.getRawY();
@@ -357,8 +340,8 @@ public class WindowContainer {
                             iconBar.getLocationOnScreen(location);
                             if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
 
-                                int numIcon = selectedIcon(location[0], location[1], width, height, touchX, touchY);
-                                if (!iconOrder) numIcon = maxCount - numIcon - 1;
+                                int numIcon = selectedIcon(location[0], location[1], touchX, touchY);
+                                if (iconOrder) numIcon = maxCount - numIcon - 1;
                                 service.startApplication(numIcon);
 
                             }
@@ -392,7 +375,7 @@ public class WindowContainer {
                                 int width = iconBarParams.width;
                                 int height = iconBarParams.height;
                                 if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
-                                    int numIcon = maxCount - 1 - selectedIcon(location[0], location[1], width, height, touchX, touchY);
+                                    int numIcon = selectedIcon(location[0], location[1], touchX, touchY);
                                     if (numIcon != checkedIcon) {
                                         showBacklightView(backViews.get(numIcon));
                                         drownView(iconViews.get(numIcon));
@@ -400,7 +383,6 @@ public class WindowContainer {
                                             hideBacklightView(backViews.get(checkedIcon));
                                             emergeView(iconViews.get(checkedIcon));
                                         }
-
                                         checkedIcon = numIcon;
                                     }
                                 } else {
@@ -509,13 +491,13 @@ public class WindowContainer {
                 && touchY < y + height;
     }
 
-    private int selectedIcon(int x, int y, int width, int height, float touchX, float touchY) {
+    private int selectedIcon(int x, int y, float touchX, float touchY) {
         switch (iconBarLayout) {
             case VERTICAL:
             default:
-                return (int) (height - (touchY - y)) / perIcon;
+                return (int) ((touchY - y) / perIcon);
             case HORIZONTAL:
-                return (int) (width - (touchX - x)) / perIcon;
+                return (int) ((touchX - x) / perIcon);
         }
     }
 
@@ -738,7 +720,7 @@ public class WindowContainer {
 
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height) {
         WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
-                getTypeView(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                getViewType(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         Params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -847,7 +829,6 @@ public class WindowContainer {
     public void avoidKeyboard(boolean value) {
         this.avoidKeyboard = value;
         buttonParams.flags = changeFlagsToAvoidKeyboard(buttonParams.flags, this.avoidKeyboard);
-        recycleViews();
     }
 
     private void calculateButtonCoordinates() {
@@ -882,7 +863,7 @@ public class WindowContainer {
         }
         if (buttonParams == null) {
             buttonParams = new WindowManager.LayoutParams(
-                    getTypeView(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                    getViewType(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             buttonParams.flags = changeFlagsToAvoidKeyboard(this.buttonParams.flags, this.avoidKeyboard);
@@ -911,7 +892,7 @@ public class WindowContainer {
 
     }
 
-    private int getTypeView() {
+    private int getViewType() {
         if (Build.VERSION.SDK_INT >= 26) {
             return WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         } else {
