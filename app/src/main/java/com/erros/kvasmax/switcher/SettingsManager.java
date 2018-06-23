@@ -2,11 +2,9 @@ package com.erros.kvasmax.switcher;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.support.v4.content.ContextCompat;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -30,15 +28,12 @@ public class SettingsManager {
         return localInstance;
     }
 
-    private Context context;
-
     private SharedPreferences settings;
     private SharedPreferences.Editor editor;
 
     private int defaultColor;
 
     private SettingsManager(Context context) {
-        this.context = context;
         settings = context.getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         editor = settings.edit();
         defaultColor = ContextCompat.getColor(context, R.color.defaultColor);
@@ -49,11 +44,7 @@ public class SettingsManager {
     }
 
     public boolean isFirstServiceLaunch() {
-        return !settings.contains(APP_PREFERENCES_SERVICE_FIRST_LAUNCH);
-    }
-
-    public void serviceWasLaunched() {
-        editor.putBoolean(APP_PREFERENCES_SERVICE_FIRST_LAUNCH, false);
+        return !settings.contains(APP_PREFERENCES_APP_X_DISTANCE);
     }
 
     public Set<String> getBlacklist() {
@@ -78,7 +69,7 @@ public class SettingsManager {
         editor.apply();
     }
 
-    public int getButttonThickness() {
+    public int getButtonThickness() {
         return settings.getInt(APP_PREFERENCES_BUTTON_THICKNESS, 40);
     }
 
@@ -252,7 +243,7 @@ public class SettingsManager {
     }
 
     private final String APP_PREFERENCES = "APP_PREFERENCES";
-    private final String APP_PREFERENCES_SERVICE_FIRST_LAUNCH = "APP_PREFERENCES_SERVICE_FIRST_LAUNCH";
+
     private final String APP_PREFERENCES_BUTTON_DRAG = "APP_PREFERENCES_BUTTON_DRAG";
     private final String APP_PREFERENCES_BUTTON_POSITION = "APP_PREFERENCES_BUTTON_POSITION";
     private final String APP_PREFERENCES_BUTTON_X_PORTRAIT = "APP_PREFERENCES_BUTTON_X_PORTRAIT";

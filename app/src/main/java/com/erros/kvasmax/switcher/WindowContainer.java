@@ -319,7 +319,7 @@ public class WindowContainer {
                         touchY = event.getRawY();
                         break;
                     case MotionEvent.ACTION_UP:
-                        changeFlagsToAvoidKeyboard(buttonParams.flags, avoidKeyboard);
+                        buttonParams.flags = changeFlagsToAvoidKeyboard(buttonParams.flags, avoidKeyboard);
                         if (!isDraggableFloatingButton) {
                             touchX = event.getRawX();
                             touchY = event.getRawY();
@@ -519,7 +519,6 @@ public class WindowContainer {
     private void recycleViews() {
         windowManager.updateViewLayout(buttonView, buttonParams);
         windowManager.updateViewLayout(iconBar, iconBarParams);
-
     }
 
     private int calculateIconSize(int value) {

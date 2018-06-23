@@ -1,21 +1,50 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.akaita.android.easylauncher'
+
+easylauncher {
+    buildTypes {
+        debug {
+            filters = greenRibbonFilter("DEBUG")
+        }
+    }
+}
+
 
 android {
+    signingConfigs {
+        config {
+            storeFile file('../certificates/switcher.jks')
+            keyPassword '212213'
+            storePassword '212213'
+            keyAlias 'switcherApp'
+        }
+    }
     compileSdkVersion 27
     buildToolsVersion '27.0.3'
-
     defaultConfig {
         applicationId "com.erros.kvasmax.switcher"
         minSdkVersion 21
         targetSdkVersion 27
         versionCode 7
         versionName "1.3"
+
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.config
             minifyEnabled true
             shrinkResources true
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            versionNameSuffix "release"
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+            versionNameSuffix "-debug"
+            applicationIdSuffix ".debug"
         }
     }
     compileOptions {
@@ -25,10 +54,7 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:design:27.0.2'
-    compile 'com.android.support:appcompat-v7:27.0.2'
-
-    compile 'com.github.QuadFlask:colorpicker:0.0.13'
-    compile 'com.google.firebase:firebase-appindexing:11.8.0'
-
+    implementation 'com.android.support:design:27.0.2'
+    implementation 'com.android.support:appcompat-v7:27.0.2'
+    implementation 'com.github.QuadFlask:colorpicker:0.0.13'
 }

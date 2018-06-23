@@ -22,9 +22,8 @@ public class Utils {
         List<ResolveInfo> lauchers = packageManager.queryIntentActivities(intent, 0);
         for (int i = 0; i < ordinaryApps.size(); i++) {
             for (ResolveInfo ri : lauchers) {
-                if (ordinaryApps.get(i).activityInfo.packageName.contains(ri.activityInfo.packageName)) {
+                if (ordinaryApps.get(i).activityInfo.packageName.equals(ri.activityInfo.packageName)) {
                     ordinaryApps.remove(i);
-                    continue;
                 }
             }
         }

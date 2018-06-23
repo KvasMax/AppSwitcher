@@ -15,10 +15,8 @@ import android.graphics.Point;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Vibrator;
-import android.support.v4.content.ContextCompat;
 import android.view.WindowManager;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 
@@ -30,7 +28,7 @@ public class SwitcherService extends Service implements ISwitcherService {
     AppSwitcher appSwitcher;
     WindowContainer winContainer;
 
-    //Constantsinc
+    //Constants
     public static final String ACTION_FINISH = "ACTION_FINISH";
 
     public static final String PARAM = "SWITCHER_PARAM";
@@ -54,9 +52,6 @@ public class SwitcherService extends Service implements ISwitcherService {
 
     public static final String ACTION_UPDATE_BLACKLIST = "ACTION_UPDATE_BLACKLIST";
 
-    int defaultSpinnerValue = 1;
-    int defaultModeValue = 0;
-
     public void onCreate() {
         super.onCreate();
 
@@ -69,18 +64,13 @@ public class SwitcherService extends Service implements ISwitcherService {
             startService(kamikadzeIntent);
         }
 
-
-        //DaggerSwitcherComponent.builder().switcherModule(new SwitcherModule(getApplication())).build().inject(this);
-
         settingsManager = SettingsManager.getInstance(this);
-        settingsManager.serviceWasLaunched();
         initialise();
         update();
     }
 
     private void initialise() {
-        int maxCount = 5;
-        maxCount = settingsManager.getAppCount() + 1;
+        int maxCount = settingsManager.getAppCount() + 1;
 
         createAppSwitcher(maxCount);
         createWindowContainer(maxCount);
@@ -100,42 +90,25 @@ public class SwitcherService extends Service implements ISwitcherService {
     private void createWindowContainer(int maxCount) {
         WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        int pointCount = 100;
-        int buttonThickness = 10;
-        int buttonLength = 10;
-        int butPortraitY = 0;
-        int butPortraitX = 200;
-        int butLandscapeY = 10;
-        int butLandscapeX = 10;
-        int distanceY = 0;
-        int distanceX = -200;
-        int buttonPosition = 1;
-        int iconSize = 0;
-        int appLayout = 0;
-        int appAnim = 0;
-        int buttonColor = ContextCompat.getColor(this, R.color.defaultColor);
-        boolean appOrder = true;
-        boolean avoidKeyboard = true;
-
-        pointCount = getResources().getInteger(R.integer.point_count);
-        buttonPosition = settingsManager.getButtonPosition();
-        buttonThickness = settingsManager.getButttonThickness();
-        buttonLength = settingsManager.getButtonLength();
+        int pointCount = getResources().getInteger(R.integer.point_count);
+        int buttonPosition = settingsManager.getButtonPosition();
+        int buttonThickness = settingsManager.getButtonThickness();
+        int buttonLength = settingsManager.getButtonLength();
         Point coordinates = settingsManager.getButtonPortraitCoordinates();
-        butPortraitY = coordinates.y;
-        butPortraitX = coordinates.x;
+        int butPortraitY = coordinates.y;
+        int butPortraitX = coordinates.x;
         coordinates = settingsManager.getButtonLandscapeCoordinates();
-        butLandscapeY = coordinates.y;
-        butLandscapeX = coordinates.x;
+        int butLandscapeY = coordinates.y;
+        int butLandscapeX = coordinates.x;
         coordinates = settingsManager.getAppBarDistance();
-        distanceY = coordinates.y;
-        distanceX = coordinates.x;
-        iconSize = settingsManager.getAppIconSize();
-        avoidKeyboard = settingsManager.isAvoidingKeyboard();
-        appOrder = settingsManager.getAppOrder() == 0;
-        appLayout = settingsManager.getAppLayout();
-        appAnim = settingsManager.getAppBarAnimation();
-        buttonColor = settingsManager.getButtonColor();
+        int distanceY = coordinates.y;
+        int distanceX = coordinates.x;
+        int iconSize = settingsManager.getAppIconSize();
+        boolean avoidKeyboard = settingsManager.isAvoidingKeyboard();
+        boolean appOrder = settingsManager.getAppOrder() == 0;
+        int appLayout = settingsManager.getAppLayout();
+        int appAnim = settingsManager.getAppBarAnimation();
+        int buttonColor = settingsManager.getButtonColor();
 
         if (settingsManager.containsCoordinates()) {
             winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount,
@@ -241,6 +214,7 @@ public class SwitcherService extends Service implements ISwitcherService {
         winContainer.rotateScreen(newConfig.orientation);
     }
 
+    @Override
     public void saveWindowPositions() {
         Point pos = winContainer.getButtonPortraitPosition();
         settingsManager.saveButtonPortraitCoordinates(pos);
