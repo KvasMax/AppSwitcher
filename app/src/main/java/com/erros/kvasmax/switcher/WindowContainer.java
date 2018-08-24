@@ -1,5 +1,6 @@
 package com.erros.kvasmax.switcher;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -195,9 +196,11 @@ public class WindowContainer {
             iconBar.setBackgroundResource(R.drawable.rounded_corners);
         }
         iconBar.setOrientation(iconBarLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        changeIconBarBackground(iconBarNeedsToBeVisible);
+        changeIconBarVisibility(iconBarNeedsToBeVisible);
 
         GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
+        drawable.setColor(Color.BLACK);
+        drawable.setAlpha(128);
         Rect paddings = new Rect();
         drawable.getPadding(paddings);
         int width = 0, height = 0;
@@ -239,7 +242,6 @@ public class WindowContainer {
         for (FrameLayout container : containers) {
             iconBar.addView(container, new LinearLayout.LayoutParams(iconActualSize, iconActualSize));
         }
-        changeIconBarDim(iconBarNeedsToBeVisible);
         if (isNewBar) {
 
             windowManager.addView(iconBar, iconBarParams);
@@ -358,17 +360,38 @@ public class WindowContainer {
                         if (!isDraggableFloatingButton) {
                             touchX = event.getRawX();
                             touchY = event.getRawY();
-                            if (!visible) {
-                                buttonView.getLocationOnScreen(location);
-                                if (!isInsideView(location[0], location[1], buttonParams.width, buttonParams.height, touchX, touchY)) {
+                            buttonView.getLocationOnScreen(location);
+                            if (!visible && !isInsideView(location[0], location[1], buttonParams.width, buttonParams.height, touchX, touchY)) {
 
-                                    service.updateAppList();
-                                    iconBar.setVisibility(View.VISIBLE);
-                                    for (ImageView im : iconViews) {
-                                        im.startAnimation(firstAnim);
+                                visible = true;
+
+                                service.updateAppList();
+                                iconBar.clearAnimation();
+                                iconBar.setAlpha(0.0f);
+                                iconBar.setVisibility(View.VISIBLE);
+                                iconBar.animate().alpha(1.0f).setDuration(100).setListener(new Animator.AnimatorListener() {
+                                    @Override
+                                    public void onAnimationStart(Animator animation) {
+
                                     }
-                                    visible = true;
-                                }
+
+                                    @Override
+                                    public void onAnimationEnd(Animator animation) {
+                                        for (ImageView im : iconViews) {
+                                            im.startAnimation(firstAnim);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onAnimationCancel(Animator animation) {
+
+                                    }
+
+                                    @Override
+                                    public void onAnimationRepeat(Animator animation) {
+
+                                    }
+                                }).start();
 
                             } else {
                                 iconBar.getLocationOnScreen(location);
@@ -651,38 +674,22 @@ public class WindowContainer {
     }
 
     public void showIconBar() {
-        changeIconBarBackground(true);
+        changeIconBarVisibility(true);
         iconBarNeedsToBeVisible = true;
         recycleViews();
     }
 
     public void hideIconBar() {
-        changeIconBarBackground(false);
+        changeIconBarVisibility(false);
         iconBarNeedsToBeVisible = false;
         recycleViews();
     }
 
-    private void changeIconBarBackground(boolean visible) {
-        GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
+    private void changeIconBarVisibility(boolean visible) {
         if (visible) {
             iconBar.setVisibility(View.VISIBLE);
-            drawable.setColor(Color.BLUE);
-            drawable.setAlpha(128);
         } else {
             iconBar.setVisibility(View.GONE);
-            drawable.setColor(Color.TRANSPARENT);
-        }
-        changeIconBarDim(visible);
-    }
-
-    private void changeIconBarDim(boolean visible) {
-        if (iconBarParams != null) {
-            if (visible) {
-                iconBarParams.dimAmount = 0;
-            } else {
-                iconBarParams.dimAmount = 0.7f;
-            }
-
         }
     }
 
@@ -720,7 +727,7 @@ public class WindowContainer {
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height) {
         WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
                 getViewType(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, // | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         Params.gravity = Gravity.TOP | Gravity.LEFT;
         Params.x = x;
@@ -728,7 +735,7 @@ public class WindowContainer {
         Params.width = width;
         Params.height = height;
         return Params;
-      /* FIXME  WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND  | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |WindowManager.LayoutParams.FLAG_FULLSCREEN;*/
+        /* FIXME  WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND  | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |WindowManager.LayoutParams.FLAG_FULLSCREEN;*/
     }
 
     public void dragFloatingButton(boolean value) {
