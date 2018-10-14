@@ -321,7 +321,6 @@ public class WindowContainer {
                         touchY = event.getRawY();
                         break;
                     case MotionEvent.ACTION_UP:
-                        buttonParams.flags = changeFlagsToAvoidKeyboard(buttonParams.flags, avoidKeyboard);
                         if (!isDraggableFloatingButton) {
                             touchX = event.getRawX();
                             touchY = event.getRawY();
@@ -378,6 +377,7 @@ public class WindowContainer {
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
                                         for (ImageView im : iconViews) {
+                                            im.clearAnimation();
                                             im.startAnimation(firstAnim);
                                         }
                                     }
