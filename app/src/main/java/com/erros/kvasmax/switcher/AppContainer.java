@@ -81,7 +81,6 @@ public class AppContainer {
             if (this.recentApps.size() == maxCount)
                 break;
         }
-
     }
 
     private boolean currentAppIsLauncher(String packageName) {

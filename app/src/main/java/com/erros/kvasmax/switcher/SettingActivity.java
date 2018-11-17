@@ -29,9 +29,7 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -70,8 +68,6 @@ public class SettingActivity extends AppCompatActivity {
 
     private SeekBar appCount;
     private SeekBar appIconSize;
-
-    private ScrollView settingsScrollView;
 
     private TextView blacklistButton;
     int offset;
@@ -179,6 +175,7 @@ public class SettingActivity extends AppCompatActivity {
 
     private void findViews() {
         lengthChange = findViewById(R.id.buttonLength);
+        thicknessChange = findViewById(R.id.buttonThickness);
         appCount = findViewById(R.id.appCount);
         appIconSize = findViewById(R.id.appIconSize);
         chooseColor = findViewById(R.id.butChooseColor);
