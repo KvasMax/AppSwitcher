@@ -22,11 +22,10 @@ import java.util.Set;
 
 public class SwitcherService extends Service implements ISwitcherService {
 
-
     private SettingsManager settingsManager;
 
     AppSwitcher appSwitcher;
-    WindowContainer winContainer;
+    ViewManipulator viewManipulator;
 
     //Constants
     public static final String ACTION_FINISH = "ACTION_FINISH";
@@ -70,7 +69,7 @@ public class SwitcherService extends Service implements ISwitcherService {
     }
 
     private void initialise() {
-        int maxCount = settingsManager.getAppCount() + 1;
+        int maxCount = settingsManager.getAppCount();
 
         createAppSwitcher(maxCount);
         createWindowContainer(maxCount);
@@ -84,7 +83,14 @@ public class SwitcherService extends Service implements ISwitcherService {
         boolean useVibration = settingsManager.isVibratingOnSwitch();
         Set<String> blacklist = settingsManager.getBlacklist();
 
-        appSwitcher = new AppSwitcher(getBaseContext(), usageStatsManager, packageManager, vibrator, maxCount, useAnimation, useVibration, blacklist);
+        appSwitcher = new AppSwitcher(getApplicationContext(),
+                usageStatsManager,
+                packageManager,
+                vibrator,
+                maxCount,
+                useAnimation,
+                useVibration,
+                blacklist);
     }
 
     private void createWindowContainer(int maxCount) {
@@ -111,66 +117,65 @@ public class SwitcherService extends Service implements ISwitcherService {
         int buttonColor = settingsManager.getButtonColor();
 
         if (settingsManager.containsCoordinates()) {
-            winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount,
+            viewManipulator = new ViewManipulator(this, this, windowManager, maxCount, pointCount,
                     appLayout, appOrder, buttonPosition, buttonThickness, buttonLength, butPortraitX, butPortraitY, butLandscapeX,
                     butLandscapeY, iconSize, distanceX, distanceY, appAnim, getResources().getConfiguration().orientation, buttonColor, avoidKeyboard);
         } else {
-            winContainer = new WindowContainer(this, this, windowManager, maxCount, pointCount, getResources().getConfiguration().orientation,
+            viewManipulator = new ViewManipulator(this, this, windowManager, maxCount, pointCount, getResources().getConfiguration().orientation,
                     appLayout, appOrder, appAnim, buttonPosition, buttonThickness, buttonLength, buttonColor, iconSize, avoidKeyboard);
         }
-        winContainer.dragFloatingButton(settingsManager.isDragableFloatingButton());
-        winContainer.dragIconBar(settingsManager.isDragableAppBar());
+        viewManipulator.dragFloatingButton(settingsManager.isDragableFloatingButton());
+        viewManipulator.dragIconBar(settingsManager.isDragableAppBar());
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
-            winContainer.hideIconBar();
+            viewManipulator.allowIconBarToBeHidden();
         } else {
 
             int param = intent.getIntExtra(PARAM, 0);
             if (intent.getAction() == null || intent.getAction().equals(ACTION_APPS_VISIBILITY)) {
                 boolean activityIsVisible = param == 0;
                 if (activityIsVisible) {
-                    winContainer.showIconBar();
+                    viewManipulator.forceIconBarToBeVisible();
                 } else {
-                    winContainer.hideIconBar();
+                    viewManipulator.allowIconBarToBeHidden();
                 }
             } else if (intent.getAction().equals(ACTION_FINISH)) {
-                winContainer.removeViews();
+                viewManipulator.removeViews();
                 stopSelf();
             } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_BUTTON)) {
-                winContainer.dragFloatingButton(param == 1);
+                viewManipulator.dragFloatingButton(param == 1);
             } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_POSITION)) {
-                winContainer.changeButtonPosition(param);
+                viewManipulator.changeButtonPosition(param);
             } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_APPS)) {
-                winContainer.dragIconBar(param == 1);
+                viewManipulator.dragIconBar(param == 1);
             } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_THICKNESS)) {
-                winContainer.changeButtonThickness(param);
+                viewManipulator.changeButtonThickness(param);
             } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_LENGTH)) {
-                winContainer.changeButtonLength(param);
+                viewManipulator.changeButtonLength(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_COLOR)) {
-                winContainer.setButtonColor(param);
+                viewManipulator.setButtonColor(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_COUNT)) {
-                int maxCount = param + 1;
-                appSwitcher.setMaxCount(maxCount);
-                winContainer.setMaxCount(maxCount);
+                appSwitcher.setMaxCount(param);
+                viewManipulator.setMaxCount(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ICON_SIZE)) {
-                winContainer.changeIconSize(param);
+                viewManipulator.changeIconSize(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ORDER)) {
-                boolean appOrder = param == 0;
-                winContainer.changeIconOrder(appOrder);
+                boolean iconOrderIsDirect = param == 0;
+                viewManipulator.changeIconOrder(iconOrderIsDirect);
             } else if (intent.getAction().equals(ACTION_LAUNCH_ANIMATION_ENABLE)) {
                 appSwitcher.useAnimation(param == 1);
             } else if (intent.getAction().equals(ACTION_LAUNCH_VIBRATION_ENABLE)) {
                 appSwitcher.useVibration(param == 1);
             } else if (intent.getAction().equals(ACTION_BUTTON_AVOID_KEYBOARD)) {
-                winContainer.avoidKeyboard(param == 1);
+                viewManipulator.avoidKeyboard(param == 1);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_LAYOUT)) {
-                winContainer.changeIconBarLayout(param);
+                viewManipulator.changeIconBarLayout(param);
             } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ANIM)) {
-                winContainer.setAnimation(param);
+                viewManipulator.setAnimation(param);
             } else if (intent.getAction().equals(ACTION_UPDATE_BLACKLIST)) {
                 appSwitcher.updateBlacklist(settingsManager.getBlacklist());
             }
@@ -181,7 +186,7 @@ public class SwitcherService extends Service implements ISwitcherService {
 
     private void update() {
         appSwitcher.update();
-        winContainer.setIconViews(appSwitcher.getIcons());
+        viewManipulator.setIconViews(appSwitcher.getIcons());
     }
 
 
@@ -199,28 +204,28 @@ public class SwitcherService extends Service implements ISwitcherService {
 
 
     @Override
-    public void startApplication(int position) {
+    public void onTapIconWithIndex(int position) {
         appSwitcher.startApplication(position);
     }
 
     @Override
-    public void updateAppList() {
+    public void updateIcons() {
         update();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        winContainer.rotateScreen(newConfig.orientation);
+        viewManipulator.rotateScreen(newConfig.orientation);
     }
 
     @Override
     public void saveWindowPositions() {
-        Point pos = winContainer.getButtonPortraitPosition();
+        Point pos = viewManipulator.getButtonPortraitPosition();
         settingsManager.saveButtonPortraitCoordinates(pos);
-        pos = winContainer.getButtonLandscapePosition();
+        pos = viewManipulator.getButtonLandscapePosition();
         settingsManager.saveButtonLandscapeCoordinates(pos);
-        pos = winContainer.getIconBarDistance();
+        pos = viewManipulator.getIconBarDistance();
         settingsManager.saveAppBarDistance(pos);
     }
 

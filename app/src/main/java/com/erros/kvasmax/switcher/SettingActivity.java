@@ -1,5 +1,6 @@
 package com.erros.kvasmax.switcher;
 
+import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
 import android.app.Dialog;
 import android.content.Context;
@@ -27,7 +28,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -39,16 +39,14 @@ import android.widget.TextView;
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class SettingActivity extends AppCompatActivity {
 
     final static int PERMISSION_REQUEST_CODE = 102;
     final static int USAGE_ACCESS_PERMISSION_REQUEST_CODE = 101;
-    final static String VERSION_CODE = "VERSION_CODE";
 
     private SettingsManager settingsManager;
 
@@ -78,16 +76,13 @@ public class SettingActivity extends AppCompatActivity {
     private TextView blacklistButton;
     int offset;
 
-    private LinearLayout settingContainer;
-
     private Dialog blacklistDialog;
     private ListView blacklistView;
 
     private AlertDialog colorPickerDialog;
 
     Set<String> blacklist;
-    List<AppInfo> appList;
-    BaseAdapter adapterBlacklist;
+    AppInfo[] appList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -169,7 +164,7 @@ public class SettingActivity extends AppCompatActivity {
         WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         Point size = new Point();
         windowManager.getDefaultDisplay().getSize(size);
-        LinearLayout bottom = findViewById(R.id.bottomPadding);
+        View bottom = findViewById(R.id.bottomPadding);
         ViewGroup.LayoutParams params = bottom.getLayoutParams();
         offset = (int) (size.y * 0.7);
         params.height = offset;
@@ -183,12 +178,9 @@ public class SettingActivity extends AppCompatActivity {
     }
 
     private void findViews() {
-        settingsScrollView = findViewById(R.id.settingsContainer);
-        thicknessChange = findViewById(R.id.buttonThickness);
         lengthChange = findViewById(R.id.buttonLength);
-        appCount = findViewById(R.id.AppCount);
-        appIconSize = findViewById(R.id.AppIconSize);
-        settingContainer = findViewById(R.id.properties);
+        appCount = findViewById(R.id.appCount);
+        appIconSize = findViewById(R.id.appIconSize);
         chooseColor = findViewById(R.id.butChooseColor);
         transparentColor = findViewById(R.id.butTransparentColor);
         dragButton = findViewById(R.id.dragFloatindButton);
@@ -203,21 +195,15 @@ public class SettingActivity extends AppCompatActivity {
         startOnBoot = findViewById(R.id.startOnBoot);
         blacklistButton = findViewById(R.id.black_list);
         serviceLauncher = (SwitchCompat) getLayoutInflater().inflate(R.layout.launch_layout, null);
-        FrameLayout blacklistContainerView = (FrameLayout) getLayoutInflater().inflate(R.layout.app_list, null);
-        blacklistView = blacklistContainerView.findViewById(R.id.app_list);
+        blacklistView = (ListView) getLayoutInflater().inflate(R.layout.app_list, null);
 
         blacklistDialog = new Dialog(SettingActivity.this);
-        blacklistDialog.setContentView(blacklistContainerView);
-        blacklistDialog.setOnCancelListener(__ -> {
-            settingsManager.saveBlacklist(blacklist);
-            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
-            sendParamWithCheck(SwitcherService.ACTION_UPDATE_BLACKLIST, 0);
-        });
+        blacklistDialog.setContentView(blacklistView);
 
-        alignBlacklistCheckboxesToRight();
+        alignBlacklistCheckBoxesToRight();
     }
 
-    private void alignBlacklistCheckboxesToRight() {
+    private void alignBlacklistCheckBoxesToRight() {
         //FIXME WTF?
         Window window = blacklistDialog.getWindow();
         WindowManager.LayoutParams wlp;
@@ -230,70 +216,46 @@ public class SettingActivity extends AppCompatActivity {
         buttonPosition.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (buttonPosition.getTag() == null) {
-                    sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_POSITION, position);
-                } else {
-                    buttonPosition.setTag(null);
-                }
+                sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_POSITION, position);
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
         appAnim.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (appAnim.getTag() == null) {
-                    sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ANIM, position);
-                } else {
-                    appAnim.setTag(null);
-                }
+                sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ANIM, position);
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
         appLayout.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (appLayout.getTag() == null) {
-                    sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_LAYOUT, position);
-                    switch (position) {
-                        case WindowContainer.VERTICAL:
-                            appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
-                            break;
-                        case WindowContainer.HORIZONTAL:
-                            appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
-                            break;
-                    }
-                } else {
-                    appLayout.setTag(null);
+                sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_LAYOUT, position);
+                switch (position) {
+                    case ViewManipulator.VERTICAL:
+                        appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
+                        break;
+                    case ViewManipulator.HORIZONTAL:
+                        appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
+                        break;
                 }
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
         appOrder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (appOrder.getTag() == null) {
-                    sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ORDER, position);
-                } else {
-                    appOrder.setTag(null);
-                }
+                sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ORDER, position);
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
         transparentColor.setOnClickListener(view -> {
             settingsManager.saveButtonColor(Color.TRANSPARENT);
@@ -342,24 +304,19 @@ public class SettingActivity extends AppCompatActivity {
                     case R.id.buttonLength:
                         sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_LENGTH, progress);
                         break;
-                    case R.id.AppCount:
-                        sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COUNT, progress);
+                    case R.id.appCount:
+                        sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COUNT, progress + 1);
                         break;
-                    case R.id.AppIconSize:
+                    case R.id.appIconSize:
                         sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_ICON_SIZE, progress);
                         break;
                 }
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
+            public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStopTrackingTouch(SeekBar seekBar) { }
         };
 
         thicknessChange.setOnSeekBarChangeListener(seekListener);
@@ -372,20 +329,59 @@ public class SettingActivity extends AppCompatActivity {
         enableAnimation.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_ANIMATION_ENABLE, isChecked ? 1 : 0));
         enableVibration.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_VIBRATION_ENABLE, isChecked ? 1 : 0));
         avoidKeyboard.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_BUTTON_AVOID_KEYBOARD, isChecked ? 1 : 0));
-        startOnBoot.setOnCheckedChangeListener((__, isChecked) -> saveSettings());
+        startOnBoot.setOnCheckedChangeListener((__, isChecked) -> settingsManager.saveStartingOnBoot(isChecked) );
         blacklistButton.setOnClickListener(__ -> {
             sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+            ((BaseAdapter) blacklistView.getAdapter()).notifyDataSetChanged();
             blacklistDialog.show();
+        });
+        blacklistDialog.setOnCancelListener(__ -> {
+            settingsManager.saveBlacklist(blacklist);
+            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+            sendParamWithCheck(SwitcherService.ACTION_UPDATE_BLACKLIST, 0);
         });
         blacklistView.setOnItemClickListener((__, view, i, l) -> {
             AppViewHolder holder = (AppViewHolder) view.getTag();
-            String packageName = appList.get(i).getPackageName();
+            String packageName = appList[i].getPackageName();
             if (blacklist.contains(packageName)) {
                 blacklist.remove(packageName);
                 holder.hidden.setChecked(false);
             } else {
                 blacklist.add(packageName);
                 holder.hidden.setChecked(true);
+            }
+        });
+        blacklistView.setAdapter(new BaseAdapter() {
+            @Override
+            public int getCount() {
+                return appList.length;
+            }
+
+            @Override
+            public Object getItem(int i) {
+                return null;
+            }
+
+            @Override
+            public long getItemId(int i) {
+                return 0;
+            }
+
+            @Override
+            public View getView(int position, View view, ViewGroup viewGroup) {
+                AppViewHolder holder;
+                if (view == null) {
+                    view = getLayoutInflater().inflate(R.layout.app_list_row, viewGroup, false);
+                    holder = new AppViewHolder(view);
+                    view.setTag(holder);
+                } else {
+                    holder = (AppViewHolder) view.getTag();
+                }
+                AppInfo app = appList[position];
+                holder.icon.setImageDrawable(app.getIcon(getPackageManager()));
+                holder.name.setText(app.getName());
+                holder.hidden.setChecked(blacklist.contains(app.getPackageName()));
+                return view;
             }
         });
     }
@@ -416,13 +412,13 @@ public class SettingActivity extends AppCompatActivity {
 
     private void launchService() {
         saveSettings();
-        Intent intent = new Intent(getApplicationContext(), SwitcherService.class);
+        Intent intent = new Intent(this, SwitcherService.class);
         intent.putExtra(SwitcherService.PARAM, 0);
         startService(intent);
     }
 
     private void showDisableNotificationDialog(Runnable runnable) {
-        new AlertDialog.Builder(SettingActivity.this)
+        new AlertDialog.Builder(this)
                 .setTitle(R.string.title_notification)
                 .setMessage(R.string.message_hide_notifications)
                 .setCancelable(false)
@@ -447,24 +443,20 @@ public class SettingActivity extends AppCompatActivity {
         serviceLauncher.setChecked(isSwitcherServiceRunning());
         thicknessChange.setProgress(settingsManager.getButtonThickness());
         lengthChange.setProgress(settingsManager.getButtonLength());
-        appCount.setProgress(settingsManager.getAppCount());
+        appCount.setProgress(settingsManager.getAppCount() - 1);
         appIconSize.setProgress(settingsManager.getAppIconSize());
-        buttonPosition.setTag(0);
         buttonPosition.setSelection(settingsManager.getButtonPosition(), false);
-        appOrder.setTag(0);
         appOrder.setSelection(settingsManager.getAppOrder(), false);
-        appLayout.setTag(0);
         appLayout.setSelection(settingsManager.getAppLayout(), false);
 
         switch (appLayout.getSelectedItemPosition()) {
-            case WindowContainer.VERTICAL:
+            case ViewManipulator.VERTICAL:
                 appAnim.setAdapter(getAnimAdapter(R.array.app_ver_anim));
                 break;
-            case WindowContainer.HORIZONTAL:
+            case ViewManipulator.HORIZONTAL:
                 appAnim.setAdapter(getAnimAdapter(R.array.app_hor_anim));
                 break;
         }
-        appAnim.setTag(0);
         appAnim.setSelection(settingsManager.getAppBarAnimation(), false);
 
         enableAnimation.setChecked(settingsManager.isAnimatingSwitching());
@@ -477,52 +469,19 @@ public class SettingActivity extends AppCompatActivity {
 
     private void loadBlacklist() {
         appList = Utils.getApps(getPackageManager());
-        Collections.sort(appList, (first, second) -> first.getName().compareTo(second.getName()));
+        Arrays.sort(appList, (first, second) -> first.getName().compareTo(second.getName()));
         if (settingsManager.getBlacklist() == null) {
-            settingsManager.saveBlacklist(new HashSet<>(appList.size() / 2));
+            settingsManager.saveBlacklist(new HashSet<>(appList.length / 2));
         }
         blacklist = settingsManager.getBlacklist();
-        adapterBlacklist = new BaseAdapter() {
-            @Override
-            public int getCount() {
-                return appList.size();
-            }
 
-            @Override
-            public Object getItem(int i) {
-                return null;
-            }
-
-            @Override
-            public long getItemId(int i) {
-                return 0;
-            }
-
-            @Override
-            public View getView(int position, View view, ViewGroup viewGroup) {
-                AppViewHolder holder;
-                if (view == null) {
-                    view = getLayoutInflater().inflate(R.layout.app_list_row, viewGroup, false);
-                    holder = new AppViewHolder(view);
-                    view.setTag(holder);
-                } else {
-                    holder = (AppViewHolder) view.getTag();
-                }
-                AppInfo app = appList.get(position);
-                holder.icon.setImageDrawable(app.getIcon(getPackageManager()));
-                holder.name.setText(app.getName());
-                holder.hidden.setChecked(blacklist.contains(app.getPackageName()));
-                return view;
-            }
-        };
-        blacklistView.setAdapter(adapterBlacklist);
     }
 
     private void saveSettings() {
         settingsManager.saveButtonThickness(thicknessChange.getProgress());
         settingsManager.saveButtonLength(lengthChange.getProgress());
         settingsManager.saveButtonPosition(buttonPosition.getSelectedItemPosition());
-        settingsManager.saveAppCount(appCount.getProgress());
+        settingsManager.saveAppCount(appCount.getProgress() + 1);
         settingsManager.saveAppIconSize(appIconSize.getProgress());
         settingsManager.saveAppOrder(appOrder.getSelectedItemPosition());
         settingsManager.saveAppLayout(appLayout.getSelectedItemPosition());
@@ -555,9 +514,23 @@ public class SettingActivity extends AppCompatActivity {
         return adapter;
     }
 
+    private boolean checkPermissions() {
+
+        boolean granted = true;
+        if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS)) {
+            requestPermission(Settings.ACTION_USAGE_ACCESS_SETTINGS, false, getResources().getString(R.string.usage_access_permission), USAGE_ACCESS_PERMISSION_REQUEST_CODE);
+            granted = false;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            requestPermission(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, false, getResources().getString(R.string.overlay_permission), PERMISSION_REQUEST_CODE);
+            granted = false;
+        }
+        return granted;
+
+    }
+
     private boolean permissionIsGranted(String permission) {
         if (permission.equals(Settings.ACTION_USAGE_ACCESS_SETTINGS)) {
-            boolean granted = false;
+            boolean granted;
             AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
             int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                     android.os.Process.myUid(), getPackageName());
@@ -573,6 +546,7 @@ public class SettingActivity extends AppCompatActivity {
                 || checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
     }
 
+    @SuppressLint("NewApi")
     private void sendPermissionRequest(String permission, boolean newMethod, int requestCode) {
 
         if (newMethod) {
@@ -584,20 +558,8 @@ public class SettingActivity extends AppCompatActivity {
 
     }
 
-    private boolean checkPermissions() {
 
-        boolean granted = true;
-        if (!permissionIsGranted(Settings.ACTION_USAGE_ACCESS_SETTINGS)) {
-            requestPermission(Settings.ACTION_USAGE_ACCESS_SETTINGS, false, getResources().getString(R.string.usage_access_permission), USAGE_ACCESS_PERMISSION_REQUEST_CODE);
-            granted = false;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            requestPermission(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, false, getResources().getString(R.string.overlay_permission), PERMISSION_REQUEST_CODE);
-            granted = false;
-        }
-        return granted;
-
-    }
-
+    @SuppressLint("NewApi")
     private void requestPermission(String permission, boolean newMethod, String message, int requestCode) {
         if (permissionIsGranted(permission))
             return;
@@ -613,8 +575,6 @@ public class SettingActivity extends AppCompatActivity {
         } else {
             showPermissionDialog(permission, newMethod, message, requestCode);
         }
-
-
     }
 
     private void showPermissionDialog(final String permission, final boolean newMethod, String message, final int requestCode) {
@@ -633,7 +593,7 @@ public class SettingActivity extends AppCompatActivity {
         }
     }
 
-    private class AppViewHolder {
+    private static class AppViewHolder {
 
         private final ImageView icon;
         private final TextView name;

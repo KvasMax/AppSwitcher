@@ -174,9 +174,9 @@ public class SettingsManager {
 
     public void saveStartingOnBoot(boolean value) {
         if(value) {
-            editor.putBoolean(APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, value);
+            editor.putBoolean(APP_PREFERENCES_COMMON_START_ON_BOOT, value);
         } else {
-            editor.remove(APP_PREFERENCES_BUTTON_AVOID_KEYBOARD);
+            editor.remove(APP_PREFERENCES_COMMON_START_ON_BOOT);
         }
         editor.apply();
     }

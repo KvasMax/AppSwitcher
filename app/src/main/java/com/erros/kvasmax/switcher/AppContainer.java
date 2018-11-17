@@ -2,7 +2,6 @@ package com.erros.kvasmax.switcher;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ public class AppContainer {
     private int maxCount;
     private String launcherPackage;
 
-    private List<AppInfo> appList;
+    private AppInfo[] appList;
     private ArrayList<AppInfo> recentApps = new ArrayList<>();
 
     public AppContainer(PackageManager packageManager, int maxCount) {
@@ -28,9 +27,9 @@ public class AppContainer {
     }
 
     private AppInfo getApp(String packageName) {
-        for (AppInfo ri : appList) {
-            if (ri.getPackageName().equals(packageName))
-                return ri;
+        for (AppInfo appInfo : appList) {
+            if (appInfo.getPackageName().equals(packageName))
+                return appInfo;
         }
         return null;
     }
@@ -51,10 +50,12 @@ public class AppContainer {
         return this.recentApps.get(position);
     }
 
-    public ArrayList<Drawable> getIcons(PackageManager pm) {
-        ArrayList<Drawable> icons = new ArrayList<>();
-        for (AppInfo app : this.recentApps) {
-            icons.add(app.getIcon(pm));
+    public Drawable[] getIcons(PackageManager pm) {
+        Drawable[] icons = new Drawable[recentApps.size()];
+        int recentAppsCount = recentApps.size();
+        for (int index = 0; index < recentAppsCount; index++) {
+            icons[index] = recentApps.get(index).getIcon(pm);
+
         }
         return icons;
     }
@@ -64,7 +65,7 @@ public class AppContainer {
     }
 
     public void updateList(List<String> recentApps) {
-        this.recentApps = new ArrayList<>();
+        this.recentApps.clear();
         AppInfo appInfo;
         boolean match = false;
         for (String appName : recentApps) {

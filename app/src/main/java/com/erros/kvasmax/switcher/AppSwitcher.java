@@ -15,8 +15,6 @@ import android.os.Vibrator;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -56,26 +54,32 @@ public class AppSwitcher {
     }
 
     public void update() {
-        List<String> recentApps = getRecentApps();
-        appContainer.updateList(recentApps);
+        appContainer.updateList(getRecentApps());
     }
 
-    public ArrayList<Drawable> getIcons() {
+    public Drawable[] getIcons() {
         return appContainer.getIcons(packageManager);
     }
 
     private List<String> getRecentApps() {
+
         long currentTime = System.currentTimeMillis();
         int period = this.period;
+
         List<UsageStats> usageStats;
-        List<String> recentApps;
+        List<String> recentApps = new ArrayList<>(appContainer.getMaxCount() + 2);
+
         do {
             usageStats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, currentTime - 1000 * 60 * period, currentTime);
             sortUsageStats(usageStats);
             List<String> usedApps = new ArrayList<>();
             for (UsageStats stat : usageStats) {
+
                 String packageName = stat.getPackageName();
-                if (!usedApps.contains(packageName) && appContainer.contains(packageName) && !blacklist.contains(packageName)) {
+
+                if (!usedApps.contains(packageName)
+                        && appContainer.contains(packageName)
+                        && !blacklist.contains(packageName)) {
                     usedApps.add(packageName);
                 }
             }
@@ -83,14 +87,20 @@ public class AppSwitcher {
             UsageEvents usageEvents = usageStatsManager.queryEvents(currentTime - 1000 * 60 * period, currentTime);
             UsageEvents.Event event = new UsageEvents.Event();
             ArrayList<String> foregroundApps = new ArrayList<>();
+
             while (usageEvents.hasNextEvent()) {
+
                 usageEvents.getNextEvent(event);
-                if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND && !foregroundApps.contains(event.getPackageName())) {
+
+                if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND
+                        && !foregroundApps.contains(event.getPackageName())) {
+
                     foregroundApps.add(event.getPackageName());
                 }
+
             }
 
-            recentApps = new ArrayList<>();
+            recentApps.clear();
             for (String app : usedApps) {
                 if (foregroundApps.contains(app)) {
                     recentApps.add(app);
@@ -100,8 +110,8 @@ public class AppSwitcher {
             period *= 5;
             if (period > 43200)
                 break;
-        }
-        while (recentApps.size() <= appContainer.getMaxCount() + 1);
+
+        } while (recentApps.size() <= appContainer.getMaxCount() + 1);
 
         return recentApps;
     }
@@ -153,15 +163,7 @@ public class AppSwitcher {
     }
 
     private void sortUsageStats(List<UsageStats> stats) {
-        Collections.sort(stats, new Comparator<UsageStats>() {
-            @Override
-            public int compare(UsageStats lhs, UsageStats rhs) {
-                if (lhs.getLastTimeUsed() > rhs.getLastTimeUsed())
-                    return -1;
-                else if (lhs.getLastTimeUsed() < rhs.getLastTimeUsed()) return 1;
-                else return 0;
-            }
-        });
+        Collections.sort(stats, (lhs, rhs) -> Long.compare(rhs.getLastTimeUsed(), lhs.getLastTimeUsed()));
     }
 
     public void updateBlacklist(Set<String> blacklist) {

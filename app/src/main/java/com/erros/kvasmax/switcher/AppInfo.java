@@ -2,6 +2,7 @@ package com.erros.kvasmax.switcher;
 
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.Nullable;
 
 /**
  * Created by erros on 23.04.16.
@@ -18,6 +19,7 @@ public class AppInfo {
         this.name = name;
     }
 
+    @Nullable
     public Drawable getIcon(PackageManager pm) {
         try {
             return pm.getApplicationIcon(packageName);

@@ -6,9 +6,9 @@ package com.erros.kvasmax.switcher;
 
 public interface ISwitcherService {
 
-    void startApplication(int position);
+    void onTapIconWithIndex(int position);
 
-    void updateAppList();
+    void updateIcons();
 
     void saveWindowPositions();
 

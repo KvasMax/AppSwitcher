@@ -1,134 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:id="@+id/framecon"
-    >
-<include layout="@layout/toolbar_layout"></include>
-    <ScrollView android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <include layout="@layout/toolbar_layout" />
+
+    <ScrollView
         android:id="@+id/settingsContainer"
-        xmlns:android="http://schemas.android.com/apk/res/android">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <LinearLayout
+            android:id="@+id/properties"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
+            android:layout_height="wrap_content"
             android:focusableInTouchMode="true"
-            android:id="@+id/properties">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="bottom"
-                android:id="@+id/topPadding">
-                <!--<com.google.android.gms.ads.NativeExpressAdView
-                    android:id="@+id/adViewTop"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    ads:adUnitId="@string/ad_native1"
-                    ads:adSize="FULL_WIDTHx300">
-                </com.google.android.gms.ads.NativeExpressAdView> -->
+            android:orientation="vertical">
 
-            </LinearLayout>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="center"
-                android:text="@string/common"
-                android:padding="@dimen/default_value"
                 android:layout_marginBottom="@dimen/default_value"
-                android:background="@color/separator"/>
+                android:background="@color/separator"
+                android:padding="@dimen/default_value"
+                android:text="@string/common"
+                android:textAlignment="center" />
 
             <android.support.v7.widget.SwitchCompat
+                android:id="@+id/startOnBoot"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/default_value"
                 android:text="@string/start_on_boot"
-                android:id="@+id/startOnBoot"
                 android:textOff="@string/off"
                 android:textOn="@string/on" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="center"
-                android:text="@string/floating_button"
-                android:padding="@dimen/default_value"
-                android:layout_marginBottom="@dimen/default_value"
                 android:layout_marginTop="@dimen/default_value"
-                android:background="@color/separator"/>
+                android:layout_marginBottom="@dimen/default_value"
+                android:background="@color/separator"
+                android:padding="@dimen/default_value"
+                android:text="@string/floating_button"
+                android:textAlignment="center" />
+
             <android.support.v7.widget.SwitchCompat
+                android:id="@+id/dragFloatindButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/default_value"
                 android:text="@string/allow_drag"
-                android:id="@+id/dragFloatindButton"
                 android:textOff="@string/off"
                 android:textOn="@string/on" />
-            <include layout="@layout/separator"/>
+
+            <include layout="@layout/separator" />
 
 
             <android.support.v7.widget.SwitchCompat
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/default_value"
-                android:text="@string/avoid_keyboard"
-                android:checked="false"
                 android:id="@+id/avoidKeyboard"
-                />
-            <include layout="@layout/separator"/>
-            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
+                android:checked="false"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/position"/>
-            <Spinner
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/default_value"
+                android:text="@string/avoid_keyboard" />
 
-                android:id="@+id/buttonPosition" />
-            <include layout="@layout/separator"/>
+            <include layout="@layout/separator" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/thickness_param"/>
-            <SeekBar
+                android:text="@string/position"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
+            <Spinner
+                android:id="@+id/buttonPosition"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/default_value" />
+
+            <include layout="@layout/separator" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/thickness_param"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
+            <SeekBar
                 android:id="@+id/buttonThickness"
-                android:progress="40"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
                 android:max="@integer/point_count"
-                />
-            <include layout="@layout/separator"/>
+                android:progress="40" />
+
+            <include layout="@layout/separator" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/length_param"/>
+                android:text="@string/length_param"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
             <SeekBar
+                android:id="@+id/buttonLength"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:id="@+id/buttonLength"
-                android:progress="80"
                 android:max="@integer/point_count"
-                />
-            <include layout="@layout/separator"/>
+                android:progress="80" />
+
+            <include layout="@layout/separator" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -138,158 +127,154 @@
                     android:id="@+id/butChooseColor"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/choose_color"
-                    android:layout_weight="1"/>
+                    android:layout_weight="1"
+                    android:text="@string/choose_color" />
+
                 <Button
                     android:id="@+id/butTransparentColor"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/make_invisible"
-                    android:layout_weight="1"/>
+                    android:layout_weight="1"
+                    android:text="@string/make_invisible" />
             </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="center"
-                android:padding="@dimen/default_value"
-                android:layout_marginBottom="@dimen/default_value"
                 android:layout_marginTop="@dimen/default_value"
+                android:layout_marginBottom="@dimen/default_value"
                 android:background="@color/separator"
-                android:text="@string/app_bar"/>
+                android:padding="@dimen/default_value"
+                android:text="@string/app_bar"
+                android:textAlignment="center" />
+
             <android.support.v7.widget.SwitchCompat
+                android:id="@+id/dragAppPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/default_value"
                 android:text="@string/allow_drag"
-                android:id="@+id/dragAppPanel"
                 android:textOff="@string/off"
-                android:textOn="@string/on"  />
-            <include layout="@layout/separator"/>
+                android:textOn="@string/on" />
+
+            <include layout="@layout/separator" />
+
             <TextView
                 android:id="@+id/black_list"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/blacklist"
                 android:padding="@dimen/default_value"
-                />
-            <include layout="@layout/separator"/>
+                android:text="@string/blacklist" />
+
+            <include layout="@layout/separator" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/app_count"/>
+                android:text="@string/app_count"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
             <SeekBar
+                android:id="@+id/appCount"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:id="@+id/AppCount"
-                android:progress="4"
                 android:max="9"
-                />
-            <include layout="@layout/separator"/>
+                android:progress="4" />
+
+            <include layout="@layout/separator" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/app_icon_size"/>
+                android:text="@string/app_icon_size"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
             <SeekBar
+                android:id="@+id/appIconSize"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:id="@+id/AppIconSize"
-                android:progress="35"
                 android:max="@integer/point_count"
-                />
-            <include layout="@layout/separator"/>
+                android:progress="35" />
+
+            <include layout="@layout/separator" />
 
             <android.support.v7.widget.SwitchCompat
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/default_value"
-                android:text="@string/transition_animation"
-                android:checked="true"
                 android:id="@+id/enableAnimation"
-                 />
-            <include layout="@layout/separator"/>
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/transition_animation" />
+
+            <include layout="@layout/separator" />
 
             <android.support.v7.widget.SwitchCompat
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/default_value"
-                android:text="@string/vibration"
-                android:checked="false"
                 android:id="@+id/enableVibration"
-                 />
-            <include layout="@layout/separator"/>
-            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAlignment="textStart"
+                android:checked="false"
                 android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/app_order"/>
-            <Spinner
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/default_value"
-                android:id="@+id/AppOrder" />
-            <include layout="@layout/separator"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAlignment="textStart"
-                android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/app_layout"/>
-            <Spinner
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/default_value"
-                android:id="@+id/AppLayout" />
-            <include layout="@layout/separator"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAlignment="textStart"
-                android:paddingLeft="@dimen/default_value"
-                android:textColor="@android:color/black"
-                android:text="@string/app_appear_animation"/>
-            <Spinner
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/default_value"
-                android:id="@+id/AppAnim" />
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="top"
-                android:id="@+id/bottomPadding">
-                <!-- <com.google.android.gms.ads.NativeExpressAdView
-                     android:id="@+id/adViewBottom"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     ads:adUnitId="@string/ad_native2"
-                     ads:adSize="FULL_WIDTHx300">
-                 </com.google.android.gms.ads.NativeExpressAdView> -->
+                android:text="@string/vibration" />
 
-                <!--  <com.google.android.gms.ads.AdView
-                      xmlns:ads="http://schemas.android.com/apk/res-auto"
-                      android:id="@+id/adViewBottom"
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:layout_gravity="center_horizontal"
-                      ads:adSize="MEDIUM_RECTANGLE"
-                      ads:adUnitId="@string/ad_banner1">
-                  </com.google.android.gms.ads.AdView> -->
+            <include layout="@layout/separator" />
 
-            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/app_order"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
+            <Spinner
+                android:id="@+id/AppOrder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/default_value" />
+
+            <include layout="@layout/separator" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/app_layout"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
+            <Spinner
+                android:id="@+id/AppLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/default_value" />
+
+            <include layout="@layout/separator" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/app_appear_animation"
+                android:textAlignment="textStart"
+                android:textColor="@android:color/black" />
+
+            <Spinner
+                android:id="@+id/AppAnim"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/default_value" />
+
+            <Space
+                android:id="@+id/bottomPadding"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
         </LinearLayout>
 
     </ScrollView>
-    </LinearLayout>
-    </android.support.design.widget.CoordinatorLayout>
+
+</LinearLayout>

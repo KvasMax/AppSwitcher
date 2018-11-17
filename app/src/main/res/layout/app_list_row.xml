@@ -1,33 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="horizontal"
     android:paddingLeft="@dimen/default_value"
-    android:paddingRight="@dimen/default_value"
-    >
+    android:paddingRight="@dimen/default_value">
+
     <ImageView
         android:id="@+id/app_icon"
         android:layout_width="@dimen/icon_size"
         android:layout_height="@dimen/icon_size"
-        android:scaleType="fitCenter"
         android:paddingRight="@dimen/default_value"
-        />
+        android:scaleType="fitCenter" />
+
     <TextView
         android:id="@+id/app_name"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:paddingRight="@dimen/default_value"
-        />
+        android:paddingRight="@dimen/default_value" />
+
     <android.support.v7.widget.AppCompatCheckBox
         android:id="@+id/hidden"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:clickable="false"
-        android:focusable="false"
-        />
+        android:focusable="false" />
 
 
 </LinearLayout>
