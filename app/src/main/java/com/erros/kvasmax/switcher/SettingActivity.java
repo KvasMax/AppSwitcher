@@ -142,7 +142,16 @@ public class SettingActivity extends AppCompatActivity {
         setBottomOffset();
         findViews();
         setAdapters();
-        loadSettings();
+
+        try {
+            loadSettings();
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            settingsManager.clear();
+            finish();
+            startActivity(new Intent(getApplicationContext(), SettingActivity.class));
+        }
+
         setListeners();
 
         if (settingsManager.isFirstServiceLaunch()) {

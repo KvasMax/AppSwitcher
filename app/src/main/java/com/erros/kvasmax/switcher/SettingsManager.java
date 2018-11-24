@@ -39,6 +39,10 @@ public class SettingsManager {
         defaultColor = ContextCompat.getColor(context, R.color.defaultColor);
     }
 
+    public void clear() {
+        editor.clear().apply();
+    }
+
     public boolean isFirstAppLaunch() {
         return !settings.contains(APP_PREFERENCES_APP_COUNT);
     }

@@ -341,6 +341,7 @@ public class ViewManipulator {
 
         buttonParentView.addView(buttonView, buttonLayoutParams);
         buttonParentView.setOnTouchListener(new View.OnTouchListener() {
+
             private int initialX;
             private int initialY;
             private float touchX;
@@ -453,18 +454,18 @@ public class ViewManipulator {
 
                                         @Override
                                         public void onAnimationStart(Animator animation) {
+                                            iconsAreUpToDate = true;
                                         }
-
                                         @Override
                                         public void onAnimationCancel(Animator animation) {
+                                            iconsAreUpToDate = false;
                                         }
-
                                         @Override
                                         public void onAnimationRepeat(Animator animation) {
                                         }
+
                                     }).start();
 
-                                    iconsAreUpToDate = true;
 
                                 } else if (iconBarHaveToBeVisible
                                         && iconBar.getVisibility() == View.VISIBLE) {
@@ -569,7 +570,6 @@ public class ViewManipulator {
                 view.clearAnimation();
                 view.setVisibility(View.INVISIBLE);
             }
-
             @Override
             public void onAnimationStart(Animation animation) {
             }
