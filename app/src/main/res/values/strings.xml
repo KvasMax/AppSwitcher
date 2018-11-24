@@ -9,6 +9,7 @@
     <string name="blacklist">App blacklist</string>
     <string name="start_on_boot">Start on boot</string>
     <string name="allow_drag">Allow drag</string>
+    <string name="darkening_behind">Darkening behind</string>
     <string name="transition_animation">Transition animation between apps</string>
     <string name="vibration">Haptic feedback on trigger</string>
     <string name="avoid_keyboard">Avoid keyboard overlapping</string>
@@ -21,11 +22,11 @@
     <string name="button_hide">Hide</string>
     <string name="start_service">Launch</string>
     <string name="grant">Grant</string>
-    <string-array name="apporder">
+    <string-array name="appOrder">
         <item>Direct</item>
         <item>Reverse</item>
     </string-array>
-    <string-array name="applayout">
+    <string-array name="appLayout">
         <item>Vertical</item>
         <item>Horizontal</item>
     </string-array>

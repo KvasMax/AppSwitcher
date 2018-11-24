@@ -15,11 +15,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -53,10 +51,7 @@ public class ViewManipulator {
     private boolean iconBarHaveToBeVisible = true;
     // touch button
     private CustomImageView buttonView;
-    private FrameLayout.LayoutParams buttonLayoutParams;
-    // touch button parent
-    private CustomFrameLayout buttonParentView;
-    private WindowManager.LayoutParams buttonParentLayoutParams;
+    private WindowManager.LayoutParams buttonLayoutParams;
     // iconViews
     private CustomLinearLayout iconBar;
     private ImageView[] iconViews;
@@ -86,6 +81,7 @@ public class ViewManipulator {
     private boolean isDraggableFloatingButton = false;
     private boolean isDraggableIconBar = false;
     private boolean avoidKeyboard = false;
+    private boolean useDarkeningBackground = false;
     private int screenOrientation;
     private int buttonPosition;
     private int buttonPortraitX;
@@ -106,11 +102,19 @@ public class ViewManipulator {
     public ViewManipulator(Context context, ISwitcherService service, WindowManager windowManager, int maxCount,
                            int pointCount, int iconBarLayout, boolean iconOrderIsDirect, int buttonPosition, int buttonThickness, int buttonLength,
                            int buttonPortraitX, int buttonPortraitY, int buttonLandscapeX, int buttonLandscapeY,
-                           int iconSize, int distanceX, int distanceY, int iconAnim, int screenOrientation, int buttonColor, boolean avoidKeyboard) {
+                           int iconSize, int distanceX, int distanceY, int iconAnim, int screenOrientation, int buttonColor,
+                           boolean avoidKeyboard, boolean useDarkeningBackground) {
+
         this.context = context;
         this.service = service;
         this.windowManager = windowManager;
+
+        updateScreenSize();
+
         this.pointCount = pointCount;
+
+        calculateIncs();
+
         this.maxCount = maxCount;
         this.iconOrderIsDirect = iconOrderIsDirect;
         this.iconBarLayout = iconBarLayout;
@@ -124,38 +128,42 @@ public class ViewManipulator {
         this.distanceX = distanceX;
         this.distanceY = distanceY;
         this.buttonColor = buttonColor;
-
-        updateScreenSize();
+        this.useDarkeningBackground = useDarkeningBackground;
         this.iconSize = calculateIconSize(iconSize);
+
         setAnimation(iconAnim);
 
         calculateStatusBarHeight();
         initialiseButton(buttonLength, buttonThickness);
         initialiseIconBar();
 
-        windowManager.addView(iconBar, iconBarParams);
-        windowManager.addView(buttonParentView, buttonParentLayoutParams);
+        addViews();
 
     }
 
     public ViewManipulator(Context context, ISwitcherService service, WindowManager windowManager, int maxCount, int pointCount,
                            int screenOrientation, int iconBarLayout, boolean iconOrderIsDirect, int iconAnim, int buttonPosition, int buttonThickness,
-                           int buttonLength, int buttonColor, int iconSize, boolean avoidKeyboard) {
+                           int buttonLength, int buttonColor, int iconSize, boolean avoidKeyboard, boolean useDarkeningBackground) {
         this.context = context;
         this.service = service;
         this.windowManager = windowManager;
-        this.pointCount = pointCount;
-        this.maxCount = maxCount;
-        this.avoidKeyboard = avoidKeyboard;
 
         updateScreenSize();
-        this.buttonColor = buttonColor;
-        this.iconSize = calculateIconSize(iconSize);
 
+        this.pointCount = pointCount;
+
+        calculateIncs();
+
+        this.maxCount = maxCount;
+        this.avoidKeyboard = avoidKeyboard;
+        this.buttonColor = buttonColor;
         this.iconOrderIsDirect = iconOrderIsDirect;
         this.iconBarLayout = iconBarLayout;
         this.buttonPosition = buttonPosition;
         this.screenOrientation = screenOrientation;
+        this.useDarkeningBackground = useDarkeningBackground;
+        this.iconSize = calculateIconSize(iconSize);
+
         setAnimation(iconAnim);
 
         int buttonLengthPixels = getLength(buttonLength);
@@ -176,9 +184,12 @@ public class ViewManipulator {
         initialiseIconBar();
         calculateButtonCoordinates();
 
-        windowManager.addView(iconBar, iconBarParams);
-        windowManager.addView(buttonParentView, buttonParentLayoutParams);
+        addViews();
+    }
 
+    private void addViews() {
+        windowManager.addView(buttonView, buttonLayoutParams);
+        windowManager.addView(iconBar, iconBarParams);
     }
 
     private void calculateStatusBarHeight() {
@@ -189,7 +200,6 @@ public class ViewManipulator {
     }
 
     private void calculateIncs() {
-
         incrementLength = (int) Math.ceil((double) Math.min(screenSize.y, screenSize.x) / pointCount);
         incrementThickness = (int) Math.ceil((double) Math.min(screenSize.y, screenSize.x) / 10 / pointCount);
         iconSizeMin = (int) Math.ceil((double) Math.max(screenSize.y, screenSize.x) / 20);
@@ -246,7 +256,7 @@ public class ViewManipulator {
                                 if (newY >= 0 && screenSize.y >= newY + iconBarParams.height) {
                                     iconBarParams.y = newY;
                                 }
-                                updateViews();
+                                updateIconBarLayout();
                                 break;
                         }
                     }
@@ -280,10 +290,14 @@ public class ViewManipulator {
                 perIcon = height / maxCount + 1;
                 break;
         }
-        int appX = buttonParentLayoutParams.x - distanceX, appY = buttonParentLayoutParams.y - distanceY;
+        int appX = buttonLayoutParams.x - distanceX,
+                appY = buttonLayoutParams.y - distanceY;
 
         iconBarParams = getLayoutParams(appX, appY, width, height);
-        iconBarParams.gravity = buttonParentLayoutParams.gravity;
+        if (!iconBarHaveToBeVisible) {
+            iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, useDarkeningBackground);
+        }
+        iconBarParams.gravity = buttonLayoutParams.gravity;
 
         FrameLayout[] containers = new FrameLayout[maxCount];
 
@@ -317,30 +331,18 @@ public class ViewManipulator {
     }
 
     private void calculateDistance() {
-        distanceX = buttonParentLayoutParams.x - iconBarParams.x;
-        distanceY = buttonParentLayoutParams.y - iconBarParams.y;
+        distanceX = buttonLayoutParams.x - iconBarParams.x;
+        distanceY = buttonLayoutParams.y - iconBarParams.y;
     }
 
     private void initialiseButton(int length, int thickness) {
-        buttonLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Gravity.TOP | Gravity.LEFT);
+
         buttonView = new CustomImageView(context);
         buttonView.setBackgroundResource(R.drawable.rounded_corners);
         GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
         drawable.setColor(buttonColor);
 
-        buttonView.setOnTouchListener((v, event) -> {
-            v.performClick();
-            return false;
-        });
-
-        buttonParentView = new CustomFrameLayout(context);
-        //buttonParentView.setBackgroundColor(Color.GREEN);
-        //buttonParentView.setAlpha(0.5f);
-
-        buttonParentView.addView(buttonView, buttonLayoutParams);
-        buttonParentView.setOnTouchListener(new View.OnTouchListener() {
+        buttonView.setOnTouchListener(new View.OnTouchListener() {
 
             private int initialX;
             private int initialY;
@@ -351,25 +353,15 @@ public class ViewManipulator {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                Log.e("buttonViewParent", event.getAction() + "");
                 int[] location = new int[2];
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        initialX = buttonParentLayoutParams.x;
-                        initialY = buttonParentLayoutParams.y;
+                        initialX = buttonLayoutParams.x;
+                        initialY = buttonLayoutParams.y;
                         touchX = event.getRawX();
                         touchY = event.getRawY();
                         if (!isDraggableFloatingButton) {
-                            buttonParentView.getLocationOnScreen(location);
-                            buttonLayoutParams.leftMargin = location[0];
-                            buttonLayoutParams.topMargin = location[1] - statusBarHeight;
-                            buttonLayoutParams.width = buttonParentLayoutParams.width;
-                            buttonLayoutParams.height = buttonParentLayoutParams.height;
-                            buttonParentLayoutParams.x = 0;
-                            buttonParentLayoutParams.y = 0;
-                            buttonParentLayoutParams.width = screenSize.x;
-                            buttonParentLayoutParams.height = screenSize.y;
-                            updateViews();
+                            //TODO show background
                         }
                         iconsAreUpToDate = false;
                         v.performClick();
@@ -402,15 +394,7 @@ public class ViewManipulator {
 
                             }
 
-                            buttonParentLayoutParams.x = initialX;
-                            buttonParentLayoutParams.y = initialY;
-                            buttonParentLayoutParams.width = buttonLayoutParams.width;
-                            buttonParentLayoutParams.height = buttonLayoutParams.height;
-                            buttonLayoutParams.leftMargin = 0;
-                            buttonLayoutParams.topMargin = 0;
-                            buttonLayoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                            buttonLayoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                            updateViews();
+                            //TODO show background
                         } else {
 
                             validateAndFixButtonPosition();
@@ -456,10 +440,12 @@ public class ViewManipulator {
                                         public void onAnimationStart(Animator animation) {
                                             iconsAreUpToDate = true;
                                         }
+
                                         @Override
                                         public void onAnimationCancel(Animator animation) {
                                             iconsAreUpToDate = false;
                                         }
+
                                         @Override
                                         public void onAnimationRepeat(Animator animation) {
                                         }
@@ -481,8 +467,8 @@ public class ViewManipulator {
                                 }
                             }
 
-
                             if (iconBar.getVisibility() == View.VISIBLE) {
+
                                 iconBar.getLocationOnScreen(location);
                                 int width = iconBarParams.width;
                                 int height = iconBarParams.height;
@@ -505,20 +491,24 @@ public class ViewManipulator {
                                     }
                                 }
                             }
+
                         } else {
 
                             int newX = initialX - (int) (touchX - event.getRawX());
                             int newY = initialY - (int) (touchY - event.getRawY());
-                            if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonParentLayoutParams.width) {
-                                buttonParentLayoutParams.x = newX;
-                                buttonParentLayoutParams.y = 0;
+                            if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonLayoutParams.width) {
+                                buttonLayoutParams.x = newX;
+                                buttonLayoutParams.y = 0;
                             }
-                            if (buttonPosition != BUTTON_POSITION_BOTTOM && newY >= 0 && screenSize.y >= newY + buttonParentLayoutParams.height) {
-                                buttonParentLayoutParams.y = newY;
-                                buttonParentLayoutParams.x = 0;
+                            if (buttonPosition != BUTTON_POSITION_BOTTOM && newY >= 0 && screenSize.y >= newY + buttonLayoutParams.height) {
+                                buttonLayoutParams.y = newY;
+                                buttonLayoutParams.x = 0;
                             }
-                            updateViews();
+                            updateButtonLayout();
                         }
+                        break;
+                    case MotionEvent.ACTION_OUTSIDE:
+                        //TODO handle touches outside
                         break;
                 }
                 return false;
@@ -535,7 +525,6 @@ public class ViewManipulator {
                 updateButtonLayoutParams(buttonPosition, buttonLandscapeX, buttonLandscapeY, buttonLength, buttonThickness);
                 break;
         }
-
 
     }
 
@@ -570,6 +559,7 @@ public class ViewManipulator {
                 view.clearAnimation();
                 view.setVisibility(View.INVISIBLE);
             }
+
             @Override
             public void onAnimationStart(Animation animation) {
             }
@@ -632,22 +622,25 @@ public class ViewManipulator {
     }
 
     private void validateAndFixButtonPosition() {
-        if (buttonParentLayoutParams.x < screenSize.x * 0.01f) {
-            buttonParentLayoutParams.x = 0;
+        if (buttonLayoutParams.x < screenSize.x * 0.01f) {
+            buttonLayoutParams.x = 0;
         }
-        if (screenSize.x - (buttonParentLayoutParams.x + buttonParentLayoutParams.width) < screenSize.x * 0.01f) {
-            buttonParentLayoutParams.x = screenSize.x - buttonParentLayoutParams.width;
+        if (screenSize.x - (buttonLayoutParams.x + buttonLayoutParams.width) < screenSize.x * 0.01f) {
+            buttonLayoutParams.x = screenSize.x - buttonLayoutParams.width;
         }
-        if (buttonParentLayoutParams.y < screenSize.y * 0.01f) {
-            buttonParentLayoutParams.y = 0;
+        if (buttonLayoutParams.y < screenSize.y * 0.01f) {
+            buttonLayoutParams.y = 0;
         }
-        if (screenSize.y - (buttonParentLayoutParams.y + buttonParentLayoutParams.height) < screenSize.y * 0.01f) {
-            buttonParentLayoutParams.y = screenSize.y - buttonParentLayoutParams.height;
+        if (screenSize.y - (buttonLayoutParams.y + buttonLayoutParams.height) < screenSize.y * 0.01f) {
+            buttonLayoutParams.y = screenSize.y - buttonLayoutParams.height;
         }
     }
 
-    private void updateViews() {
-        windowManager.updateViewLayout(buttonParentView, buttonParentLayoutParams);
+    private void updateButtonLayout() {
+        windowManager.updateViewLayout(buttonView, buttonLayoutParams);
+    }
+
+    private void updateIconBarLayout() {
         windowManager.updateViewLayout(iconBar, iconBarParams);
     }
 
@@ -683,13 +676,13 @@ public class ViewManipulator {
 
 
     public void changeButtonThickness(int value) {
-        changeThickness(buttonParentLayoutParams, value);
-        updateViews();
+        changeThickness(buttonLayoutParams, value);
+        updateButtonLayout();
     }
 
     public void changeButtonLength(int value) {
-        changeLength(buttonParentLayoutParams, value);
-        updateViews();
+        changeLength(buttonLayoutParams, value);
+        updateButtonLayout();
     }
 
     public void changeIconOrder(boolean iconOrderIsDirect) {
@@ -699,13 +692,13 @@ public class ViewManipulator {
     public void setMaxCount(int maxCount) {
         this.maxCount = maxCount;
         initialiseIconBar();
-        updateViews();
+        updateIconBarLayout();
     }
 
     public void changeIconSize(int value) {
         this.iconSize = calculateIconSize(value);
         initialiseIconBar();
-        updateViews();
+        updateIconBarLayout();
     }
 
     public void setIconViews(Drawable[] icons) {
@@ -783,9 +776,6 @@ public class ViewManipulator {
 
         for (Animation anim : exitAnimations) {
             anim.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
@@ -800,6 +790,10 @@ public class ViewManipulator {
                 @Override
                 public void onAnimationRepeat(Animation animation) {
                 }
+
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
             });
         }
     }
@@ -807,13 +801,15 @@ public class ViewManipulator {
     public void forceIconBarToBeVisible() {
         changeIconBarVisibility(true);
         iconBarHaveToBeVisible = true;
-        updateViews();
+        iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, false);
+        updateIconBarLayout();
     }
 
     public void allowIconBarToBeHidden() {
         changeIconBarVisibility(false);
         iconBarHaveToBeVisible = false;
-        updateViews();
+        iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, useDarkeningBackground);
+        updateIconBarLayout();
     }
 
     private void changeIconBarVisibility(boolean visible) {
@@ -830,42 +826,41 @@ public class ViewManipulator {
         switch (buttonPosition) {
             case BUTTON_POSITION_BOTTOM:
                 iconBarParams.x = 0;
-                iconBarParams.y = buttonParentLayoutParams.height;
+                iconBarParams.y = buttonLayoutParams.height;
                 break;
             case BUTTON_POSITION_RIGHT:
             case BUTTON_POSITION_LEFT:
-                iconBarParams.x = buttonParentLayoutParams.width;
+                iconBarParams.x = buttonLayoutParams.width;
                 iconBarParams.y = 0;
                 break;
         }
         calculateDistance();
         service.saveWindowPositions();
-        updateViews();
+        updateIconBarLayout();
     }
 
     public void removeViews() {
         windowManager.removeView(iconBar);
-        windowManager.removeView(buttonParentView);
+        windowManager.removeView(buttonView);
     }
 
     private void updateScreenSize() {
         windowManager.getDefaultDisplay().getSize(screenSize);
         windowManager.getDefaultDisplay().getRealSize(fullScreenSize);
-        calculateIncs();
     }
 
-
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height) {
-        WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
                 getViewType(),
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, // | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
-        Params.gravity = Gravity.TOP | Gravity.LEFT;
-        Params.x = x;
-        Params.y = y;
-        Params.width = width;
-        Params.height = height;
-        return Params;
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        layoutParams.x = x;
+        layoutParams.y = y;
+        layoutParams.width = width;
+        layoutParams.height = height;
+        layoutParams.dimAmount = 0.5f;
+        return layoutParams;
     }
 
     public void dragFloatingButton(boolean value) {
@@ -890,21 +885,23 @@ public class ViewManipulator {
 
     public void rotateScreen(final int orientation) {
         updateScreenSize();
+        calculateIncs();
         screenOrientation = orientation;
         switch (screenOrientation) {
             case Configuration.ORIENTATION_PORTRAIT:
-                buttonParentLayoutParams.x = buttonPortraitX;
-                buttonParentLayoutParams.y = buttonPortraitY;
+                buttonLayoutParams.x = buttonPortraitX;
+                buttonLayoutParams.y = buttonPortraitY;
                 break;
             case Configuration.ORIENTATION_LANDSCAPE:
-                buttonParentLayoutParams.x = buttonLandscapeX;
-                buttonParentLayoutParams.y = buttonLandscapeY;
+                buttonLayoutParams.x = buttonLandscapeX;
+                buttonLayoutParams.y = buttonLandscapeY;
                 break;
         }
-        iconBarParams.x = buttonParentLayoutParams.x - distanceX;
-        iconBarParams.y = buttonParentLayoutParams.y - distanceY;
+        iconBarParams.x = buttonLayoutParams.x - distanceX;
+        iconBarParams.y = buttonLayoutParams.y - distanceY;
 
-        updateViews();
+        updateButtonLayout();
+        updateIconBarLayout();
 
     }
 
@@ -920,36 +917,36 @@ public class ViewManipulator {
 
         if ((previousPosition == BUTTON_POSITION_LEFT && position == BUTTON_POSITION_RIGHT)
                 || (previousPosition == BUTTON_POSITION_RIGHT && position == BUTTON_POSITION_LEFT)) {
-            x = buttonParentLayoutParams.x;
-            y = buttonParentLayoutParams.y;
-            length = buttonParentLayoutParams.height;
-            thickness = buttonParentLayoutParams.width;
+            x = buttonLayoutParams.x;
+            y = buttonLayoutParams.y;
+            length = buttonLayoutParams.height;
+            thickness = buttonLayoutParams.width;
         } else {
             switch (screenOrientation) {
                 case Configuration.ORIENTATION_PORTRAIT:
                     if (position == BUTTON_POSITION_BOTTOM) {
                         y = 0;
-                        x = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
-                        thickness = buttonParentLayoutParams.width;
-                        length = buttonParentLayoutParams.height;
+                        x = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonLayoutParams.height)) * (screenSize.x - buttonLayoutParams.height));
+                        thickness = buttonLayoutParams.width;
+                        length = buttonLayoutParams.height;
                     } else {
                         x = 0;
-                        y = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
-                        thickness = buttonParentLayoutParams.height;
-                        length = buttonParentLayoutParams.width;
+                        y = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonLayoutParams.width)) * (screenSize.y - buttonLayoutParams.width));
+                        thickness = buttonLayoutParams.height;
+                        length = buttonLayoutParams.width;
                     }
                     break;
                 case Configuration.ORIENTATION_LANDSCAPE:
                     if (position == BUTTON_POSITION_BOTTOM) {
                         y = 0;
-                        x = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
-                        thickness = buttonParentLayoutParams.width;
-                        length = buttonParentLayoutParams.height;
+                        x = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonLayoutParams.height)) * (screenSize.x - buttonLayoutParams.height));
+                        thickness = buttonLayoutParams.width;
+                        length = buttonLayoutParams.height;
                     } else {
                         x = 0;
-                        y = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
-                        thickness = buttonParentLayoutParams.height;
-                        length = buttonParentLayoutParams.width;
+                        y = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonLayoutParams.width)) * (screenSize.y - buttonLayoutParams.width));
+                        thickness = buttonLayoutParams.height;
+                        length = buttonLayoutParams.width;
                     }
                     break;
             }
@@ -957,28 +954,31 @@ public class ViewManipulator {
         updateButtonLayoutParams(position, x, y, length, thickness);
         calculateButtonCoordinates();
         updateIconBarPosition(position, previousPosition);
-        updateViews();
+
+        updateButtonLayout();
+        updateIconBarLayout();
+
         service.saveWindowPositions();
     }
 
     public void avoidKeyboard(boolean value) {
         avoidKeyboard = value;
-        buttonParentLayoutParams.flags = changeFlagsToAvoidKeyboard(buttonParentLayoutParams.flags, avoidKeyboard);
+        buttonLayoutParams.flags = changeFlagsToAvoidKeyboard(buttonLayoutParams.flags, avoidKeyboard);
     }
 
     private void calculateButtonCoordinates() {
         switch (screenOrientation) {
             case Configuration.ORIENTATION_PORTRAIT:
-                buttonPortraitX = buttonParentLayoutParams.x;
-                buttonPortraitY = buttonParentLayoutParams.y;
-                buttonLandscapeX = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
-                buttonLandscapeY = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
+                buttonPortraitX = buttonLayoutParams.x;
+                buttonPortraitY = buttonLayoutParams.y;
+                buttonLandscapeX = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonLayoutParams.width)) * (screenSize.y - buttonLayoutParams.width));
+                buttonLandscapeY = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonLayoutParams.height)) * (screenSize.x - buttonLayoutParams.height));
                 break;
             case Configuration.ORIENTATION_LANDSCAPE:
-                buttonLandscapeX = buttonParentLayoutParams.x;
-                buttonLandscapeY = buttonParentLayoutParams.y;
-                buttonPortraitX = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
-                buttonPortraitY = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
+                buttonLandscapeX = buttonLayoutParams.x;
+                buttonLandscapeY = buttonLayoutParams.y;
+                buttonPortraitX = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonLayoutParams.width)) * (screenSize.y - buttonLayoutParams.width));
+                buttonPortraitY = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonLayoutParams.height)) * (screenSize.x - buttonLayoutParams.height));
                 break;
         }
     }
@@ -997,35 +997,37 @@ public class ViewManipulator {
                 gravity = Gravity.TOP | Gravity.LEFT;
                 break;
         }
-        if (buttonParentLayoutParams == null) {
-            buttonParentLayoutParams = new WindowManager.LayoutParams(
+        if (buttonLayoutParams == null) {
+            buttonLayoutParams = new WindowManager.LayoutParams(
                     getViewType(),
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                            | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSPARENT);
             // disable animations
             try {
-                int currentFlags = (Integer) buttonParentLayoutParams.getClass().getField("privateFlags").get(buttonParentLayoutParams);
-                buttonParentLayoutParams.getClass().getField("privateFlags").set(buttonParentLayoutParams, currentFlags | 0x00000040);
+                int currentFlags = (Integer) buttonLayoutParams.getClass().getField("privateFlags").get(buttonLayoutParams);
+                buttonLayoutParams.getClass().getField("privateFlags").set(buttonLayoutParams, currentFlags | 0x00000040);
             } catch (Exception e) {
                 // shit happens
             }
         }
-        buttonParentLayoutParams.flags = changeFlagsToAvoidKeyboard(this.buttonParentLayoutParams.flags, this.avoidKeyboard);
-        buttonParentLayoutParams.gravity = gravity;
-        buttonParentLayoutParams.x = x;
-        buttonParentLayoutParams.y = y;
+        buttonLayoutParams.flags = changeFlagsToAvoidKeyboard(buttonLayoutParams.flags, avoidKeyboard);
+        buttonLayoutParams.gravity = gravity;
+        buttonLayoutParams.x = x;
+        buttonLayoutParams.y = y;
         if (buttonPosition == BUTTON_POSITION_BOTTOM) {
-            buttonParentLayoutParams.width = length;
-            buttonParentLayoutParams.height = thickness;
+            buttonLayoutParams.width = length;
+            buttonLayoutParams.height = thickness;
         } else {
-            buttonParentLayoutParams.width = thickness;
-            buttonParentLayoutParams.height = length;
+            buttonLayoutParams.width = thickness;
+            buttonLayoutParams.height = length;
         }
     }
 
 
     private void updateIconBarPosition(int position, int previousPosition) {
-        iconBarParams.gravity = buttonParentLayoutParams.gravity;
+        iconBarParams.gravity = buttonLayoutParams.gravity;
         if (position == BUTTON_POSITION_BOTTOM || previousPosition == BUTTON_POSITION_BOTTOM) {
             iconBarParams.y = screenSize.y - iconBarParams.height - iconBarParams.y - statusBarHeight;
         }
@@ -1041,12 +1043,26 @@ public class ViewManipulator {
         } else {
             return WindowManager.LayoutParams.TYPE_PHONE;
         }
+    }
 
+    public void useDarkeningBackground(boolean enabled) {
+        useDarkeningBackground = enabled;
+        iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, enabled);
+        updateIconBarLayout();
     }
 
     private int changeFlagsToAvoidKeyboard(int flags, boolean avoidKeyboard) {
         int flag = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         if (avoidKeyboard) {
+            return flags | flag;
+        } else {
+            return flags & ~flag;
+        }
+    }
+
+    private int changeFlagsToUseDarkeningBehind(int flags, boolean enabled) {
+        int flag = WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        if (enabled) {
             return flags | flag;
         } else {
             return flags & ~flag;
@@ -1089,31 +1105,6 @@ public class ViewManipulator {
         }
 
         public CustomLinearLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-            super(context, attrs, defStyleAttr, defStyleRes);
-        }
-
-        @Override
-        public boolean performClick() {
-            super.performClick();
-            return true;
-        }
-    }
-
-    private static class CustomFrameLayout extends FrameLayout {
-
-        public CustomFrameLayout(Context context) {
-            super(context);
-        }
-
-        public CustomFrameLayout(Context context, @Nullable AttributeSet attrs) {
-            super(context, attrs);
-        }
-
-        public CustomFrameLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-            super(context, attrs, defStyleAttr);
-        }
-
-        public CustomFrameLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
             super(context, attrs, defStyleAttr, defStyleRes);
         }
 

@@ -203,6 +203,15 @@
             <include layout="@layout/separator" />
 
             <android.support.v7.widget.SwitchCompat
+                android:id="@+id/darkeningBehindSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/default_value"
+                android:text="@string/darkening_behind" />
+
+            <include layout="@layout/separator" />
+
+            <android.support.v7.widget.SwitchCompat
                 android:id="@+id/enableAnimation"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

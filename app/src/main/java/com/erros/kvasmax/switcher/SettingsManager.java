@@ -246,6 +246,12 @@ public class SettingsManager {
         editor.apply();
     }
 
+    private final String APP_PREFERENCES_APP_USE_DARKENING_BEHIND = "APP_PREFERENCES_APP_USE_DARKENING_BEHIND";
+
+    public boolean shouldUseDarkeningBehind() {
+        return settings.getBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, false);
+    }
+
     private final String APP_PREFERENCES = "APP_PREFERENCES";
 
     private final String APP_PREFERENCES_BUTTON_DRAG = "APP_PREFERENCES_BUTTON_DRAG";
@@ -269,6 +275,10 @@ public class SettingsManager {
     private final String APP_PREFERENCES_APP_Y_DISTANCE = "APP_PREFERENCES_APP_Y_DISTANCE";
     private final String APP_PREFERENCES_APP_USE_ANIMATION = "APP_PREFERENCES_APP_USE_ANIMATION";
     private final String APP_PREFERENCES_APP_USE_VIBRATION = "APP_PREFERENCES_APP_USE_VIBRATION";
+
+    public void saveDarkeningBehind(boolean enabled) {
+        editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).apply();
+    }
 
     private final String APP_PREFERENCES_COMMON_START_ON_BOOT = "APP_PREFERENCES_COMMON_START_ON_BOOT";
     private final String APP_PREFERENCES_COMMON_BLACKLIST = "APP_PREFERENCES_COMMON_BLACKLIST";

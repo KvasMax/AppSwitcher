@@ -58,6 +58,7 @@ public class SettingActivity extends AppCompatActivity {
     private SwitchCompat enableAnimation;
     private SwitchCompat enableVibration;
     private SwitchCompat avoidKeyboard;
+    private SwitchCompat darkeningBehindSwitch;
     private SwitchCompat startOnBoot;
 
     private Button chooseColor;
@@ -178,8 +179,8 @@ public class SettingActivity extends AppCompatActivity {
 
     private void setAdapters() {
         buttonPosition.setAdapter(getAnimAdapter(R.array.button_positions));
-        appOrder.setAdapter(getAnimAdapter(R.array.apporder));
-        appLayout.setAdapter(getAnimAdapter(R.array.applayout));
+        appOrder.setAdapter(getAnimAdapter(R.array.appOrder));
+        appLayout.setAdapter(getAnimAdapter(R.array.appLayout));
     }
 
     private void findViews() {
@@ -200,6 +201,7 @@ public class SettingActivity extends AppCompatActivity {
         appAnim = findViewById(R.id.AppAnim);
         startOnBoot = findViewById(R.id.startOnBoot);
         blacklistButton = findViewById(R.id.black_list);
+        darkeningBehindSwitch = findViewById(R.id.darkeningBehindSwitch);
         serviceLauncher = (SwitchCompat) getLayoutInflater().inflate(R.layout.launch_layout, null);
         blacklistView = (ListView) getLayoutInflater().inflate(R.layout.app_list, null);
 
@@ -342,6 +344,7 @@ public class SettingActivity extends AppCompatActivity {
         enableAnimation.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_ANIMATION_ENABLE, isChecked ? 1 : 0));
         enableVibration.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_VIBRATION_ENABLE, isChecked ? 1 : 0));
         avoidKeyboard.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_BUTTON_AVOID_KEYBOARD, isChecked ? 1 : 0));
+        darkeningBehindSwitch.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_APPS_DARKENING_BACKGROUND, isChecked ? 1 : 0));
         startOnBoot.setOnCheckedChangeListener((__, isChecked) -> settingsManager.saveStartingOnBoot(isChecked));
         blacklistButton.setOnClickListener(__ -> {
             sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
@@ -477,6 +480,7 @@ public class SettingActivity extends AppCompatActivity {
         enableVibration.setChecked(settingsManager.isVibratingOnSwitch());
         avoidKeyboard.setChecked(settingsManager.isAvoidingKeyboard());
         startOnBoot.setChecked(settingsManager.isStartingOnBoot());
+        darkeningBehindSwitch.setChecked(settingsManager.shouldUseDarkeningBehind());
 
         loadBlacklist();
     }
@@ -503,6 +507,7 @@ public class SettingActivity extends AppCompatActivity {
         settingsManager.saveAnimatingSwitching(enableAnimation.isChecked());
         settingsManager.saveVibratingOnSwitch(enableVibration.isChecked());
         settingsManager.saveAvoidingKeyboard(avoidKeyboard.isChecked());
+        settingsManager.saveDarkeningBehind(darkeningBehindSwitch.isChecked());
         settingsManager.saveStartingOnBoot(startOnBoot.isChecked());
         settingsManager.saveBlacklist(blacklist);
         settingsManager.saveDragableFloatingButton(dragButton.isChecked());
