@@ -78,6 +78,7 @@ public class ViewManipulator {
     private boolean iconOrderIsDirect;
     private int iconBarLayout;
     private int iconAnim;
+    private int iconBarBackgroundColor;
     private boolean isDraggableFloatingButton = false;
     private boolean isDraggableIconBar = false;
     private boolean avoidKeyboard = false;
@@ -103,7 +104,7 @@ public class ViewManipulator {
                            int pointCount, int iconBarLayout, boolean iconOrderIsDirect, int buttonPosition, int buttonThickness, int buttonLength,
                            int buttonPortraitX, int buttonPortraitY, int buttonLandscapeX, int buttonLandscapeY,
                            int iconSize, int distanceX, int distanceY, int iconAnim, int screenOrientation, int buttonColor,
-                           boolean avoidKeyboard, boolean useDarkeningBackground) {
+                           boolean avoidKeyboard, boolean useDarkeningBackground, int iconBarBackgroundColor) {
 
         this.context = context;
         this.service = service;
@@ -129,6 +130,7 @@ public class ViewManipulator {
         this.distanceY = distanceY;
         this.buttonColor = buttonColor;
         this.useDarkeningBackground = useDarkeningBackground;
+        this.iconBarBackgroundColor = iconBarBackgroundColor;
         this.iconSize = calculateIconSize(iconSize);
 
         setAnimation(iconAnim);
@@ -143,7 +145,8 @@ public class ViewManipulator {
 
     public ViewManipulator(Context context, ISwitcherService service, WindowManager windowManager, int maxCount, int pointCount,
                            int screenOrientation, int iconBarLayout, boolean iconOrderIsDirect, int iconAnim, int buttonPosition, int buttonThickness,
-                           int buttonLength, int buttonColor, int iconSize, boolean avoidKeyboard, boolean useDarkeningBackground) {
+                           int buttonLength, int buttonColor, int iconSize, boolean avoidKeyboard, boolean useDarkeningBackground, int iconBarBackgroundColor) {
+
         this.context = context;
         this.service = service;
         this.windowManager = windowManager;
@@ -162,7 +165,9 @@ public class ViewManipulator {
         this.buttonPosition = buttonPosition;
         this.screenOrientation = screenOrientation;
         this.useDarkeningBackground = useDarkeningBackground;
+        this.iconBarBackgroundColor = iconBarBackgroundColor;
         this.iconSize = calculateIconSize(iconSize);
+
 
         setAnimation(iconAnim);
 
@@ -269,8 +274,7 @@ public class ViewManipulator {
         changeIconBarVisibility(iconBarHaveToBeVisible);
 
         GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
-        drawable.setColor(Color.BLACK);
-        drawable.setAlpha(128);
+        drawable.setColor(iconBarBackgroundColor);
         Rect paddings = new Rect();
         drawable.getPadding(paddings);
         int width = 0, height = 0;
@@ -395,6 +399,7 @@ public class ViewManipulator {
                             }
 
                             //TODO show background
+
                         } else {
 
                             validateAndFixButtonPosition();
@@ -508,6 +513,7 @@ public class ViewManipulator {
                         }
                         break;
                     case MotionEvent.ACTION_OUTSIDE:
+                        iconsAreUpToDate = false;
                         //TODO handle touches outside
                         break;
                 }
@@ -563,6 +569,7 @@ public class ViewManipulator {
             @Override
             public void onAnimationStart(Animation animation) {
             }
+
             @Override
             public void onAnimationRepeat(Animation animation) {
             }
@@ -853,7 +860,7 @@ public class ViewManipulator {
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
                 getViewType(),
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, // | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT);
+                PixelFormat.TRANSPARENT);
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         layoutParams.x = x;
         layoutParams.y = y;
@@ -1047,8 +1054,16 @@ public class ViewManipulator {
 
     public void useDarkeningBackground(boolean enabled) {
         useDarkeningBackground = enabled;
-        iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, enabled);
-        updateIconBarLayout();
+        if (!iconBarHaveToBeVisible) {
+            iconBarParams.flags = changeFlagsToUseDarkeningBehind(iconBarParams.flags, enabled);
+            updateIconBarLayout();
+        }
+    }
+
+    public void changeIconBarBackgroundColor(int color) {
+        iconBarBackgroundColor = color;
+        GradientDrawable drawable = (GradientDrawable) iconBar.getBackground();
+        drawable.setColor(iconBarBackgroundColor);
     }
 
     private int changeFlagsToAvoidKeyboard(int flags, boolean avoidKeyboard) {
@@ -1085,8 +1100,7 @@ public class ViewManipulator {
 
         @Override
         public boolean performClick() {
-            super.performClick();
-            return true;
+            return super.performClick();
         }
     }
 
@@ -1110,8 +1124,7 @@ public class ViewManipulator {
 
         @Override
         public boolean performClick() {
-            super.performClick();
-            return true;
+            return super.performClick();
         }
     }
 

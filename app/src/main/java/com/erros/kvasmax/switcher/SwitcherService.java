@@ -47,6 +47,7 @@ public class SwitcherService extends Service implements ISwitcherService {
     public static final String ACTION_APPS_VISIBILITY = "ACTION_APPS_VISIBILITY";
     public static final String ACTION_ALLOW_DRAG_APPS = "ACTION_ALLOW_DRAG_APPS";
     public static final String ACTION_APPS_DARKENING_BACKGROUND = "ACTION_APPS_DARKENING_BACKGROUND";
+    public static final String ACTION_CHANGE_APPS_COLOR = "ACTION_CHANGE_APPS_COLOR";
     public static final String ACTION_CHANGE_APPS_COUNT = "ACTION_CHANGE_APPS_COUNT";
     public static final String ACTION_CHANGE_APPS_ICON_SIZE = "ACTION_CHANGE_APPS_ICON_SIZE";
     public static final String ACTION_CHANGE_APPS_ORDER = "ACTION_CHANGE_APPS_ORDER";
@@ -128,14 +129,17 @@ public class SwitcherService extends Service implements ISwitcherService {
         int appAnim = settingsManager.getAppBarAnimation();
         int buttonColor = settingsManager.getButtonColor();
         boolean useDarkeningBehind = settingsManager.shouldUseDarkeningBehind();
+        int iconBarBackgroundColor = settingsManager.getAppBarColor();
 
         if (settingsManager.containsCoordinates()) {
             viewManipulator = new ViewManipulator(this, this, windowManager, maxCount, pointCount,
                     appLayout, appOrder, buttonPosition, buttonThickness, buttonLength, butPortraitX, butPortraitY, butLandscapeX,
-                    butLandscapeY, iconSize, distanceX, distanceY, appAnim, getResources().getConfiguration().orientation, buttonColor, avoidKeyboard, useDarkeningBehind);
+                    butLandscapeY, iconSize, distanceX, distanceY, appAnim, getResources().getConfiguration().orientation,
+                    buttonColor, avoidKeyboard, useDarkeningBehind, iconBarBackgroundColor);
         } else {
             viewManipulator = new ViewManipulator(this, this, windowManager, maxCount, pointCount, getResources().getConfiguration().orientation,
-                    appLayout, appOrder, appAnim, buttonPosition, buttonThickness, buttonLength, buttonColor, iconSize, avoidKeyboard, useDarkeningBehind);
+                    appLayout, appOrder, appAnim, buttonPosition, buttonThickness, buttonLength,
+                    buttonColor, iconSize, avoidKeyboard, useDarkeningBehind, iconBarBackgroundColor);
         }
         viewManipulator.dragFloatingButton(settingsManager.isDragableFloatingButton());
         viewManipulator.dragIconBar(settingsManager.isDragableAppBar());
@@ -254,6 +258,8 @@ public class SwitcherService extends Service implements ISwitcherService {
                 appSwitcher.updateBlacklist(settingsManager.getBlacklist());
             } else if (intent.getAction().equals(ACTION_APPS_DARKENING_BACKGROUND)) {
                 viewManipulator.useDarkeningBackground(param == 1);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_COLOR)) {
+                viewManipulator.changeIconBarBackgroundColor(param);
             }
         }
         return START_STICKY;

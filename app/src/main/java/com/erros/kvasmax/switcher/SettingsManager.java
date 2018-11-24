@@ -31,13 +31,9 @@ public class SettingsManager {
     private SharedPreferences settings;
     private SharedPreferences.Editor editor;
 
-    private int defaultColor;
-
-    private SettingsManager(Context context) {
-        settings = context.getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
-        editor = settings.edit();
-        defaultColor = ContextCompat.getColor(context, R.color.defaultColor);
-    }
+    private final String APP_PREFERENCES_APP_BAR_COLOR = "APP_PREFERENCES_APP_BAR_COLOR";
+    private int defaultButtonColor;
+    private int defaultAppBarColor;
 
     public void clear() {
         editor.clear().apply();
@@ -60,17 +56,31 @@ public class SettingsManager {
         editor.apply();
     }
 
+    private SettingsManager(Context context) {
+        settings = context.getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        editor = settings.edit();
+        defaultButtonColor = ContextCompat.getColor(context, R.color.defaultButtonColor);
+        defaultAppBarColor = ContextCompat.getColor(context, R.color.defaultAppBarColor);
+    }
+
     public int getButtonColor() {
-        return settings.getInt(APP_PREFERENCES_BUTTON_COLOR, defaultColor);
+        return settings.getInt(APP_PREFERENCES_BUTTON_COLOR, defaultButtonColor);
     }
 
     public int getButtonDefaultColor() {
-        return defaultColor;
+        return defaultButtonColor;
     }
 
     public void saveButtonColor(int color) {
-        editor.putInt(APP_PREFERENCES_BUTTON_COLOR, color);
-        editor.apply();
+        editor.putInt(APP_PREFERENCES_BUTTON_COLOR, color).apply();
+    }
+
+    public int getAppBarDefaultColor() {
+        return defaultAppBarColor;
+    }
+
+    public int getAppBarColor() {
+        return settings.getInt(APP_PREFERENCES_APP_BAR_COLOR, defaultAppBarColor);
     }
 
     public int getButtonThickness() {
@@ -275,6 +285,11 @@ public class SettingsManager {
     private final String APP_PREFERENCES_APP_Y_DISTANCE = "APP_PREFERENCES_APP_Y_DISTANCE";
     private final String APP_PREFERENCES_APP_USE_ANIMATION = "APP_PREFERENCES_APP_USE_ANIMATION";
     private final String APP_PREFERENCES_APP_USE_VIBRATION = "APP_PREFERENCES_APP_USE_VIBRATION";
+
+    public void saveAppBarColor(int color) {
+        editor.putInt(APP_PREFERENCES_APP_BAR_COLOR, color).apply();
+    }
+
 
     public void saveDarkeningBehind(boolean enabled) {
         editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).apply();

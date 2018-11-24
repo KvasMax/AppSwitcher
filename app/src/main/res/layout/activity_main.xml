@@ -202,6 +202,29 @@
 
             <include layout="@layout/separator" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/appBarChooseColorButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/choose_color" />
+
+                <Button
+                    android:id="@+id/appBarChooseTransparentButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/make_invisible" />
+
+            </LinearLayout>
+
+            <include layout="@layout/separator" />
+
             <android.support.v7.widget.SwitchCompat
                 android:id="@+id/darkeningBehindSwitch"
                 android:layout_width="match_parent"

@@ -4,7 +4,8 @@
     <color name="colorPrimaryDark">#4169E1</color>
     <color name="colorAccent">#4169E1</color>
     <color name="separator">#c0c0c0</color>
-    <color name="defaultColor">#7Fff0000</color>
+    <color name="defaultButtonColor">#7Fff0000</color>
+    <color name="defaultAppBarColor">#7F000000</color>
     <color name="stop">#FF0000</color>
     <color name="start">#00FF00</color>
 </resources>

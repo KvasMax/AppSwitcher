@@ -61,8 +61,11 @@ public class SettingActivity extends AppCompatActivity {
     private SwitchCompat darkeningBehindSwitch;
     private SwitchCompat startOnBoot;
 
-    private Button chooseColor;
-    private Button transparentColor;
+    private Button chooseButtonColor;
+    private Button transparentButtonColor;
+
+    private Button appBarChooseColorButton;
+    private Button appBarChooseTransparentButton;
 
     private SeekBar thicknessChange;
     private SeekBar lengthChange;
@@ -188,8 +191,8 @@ public class SettingActivity extends AppCompatActivity {
         thicknessChange = findViewById(R.id.buttonThickness);
         appCount = findViewById(R.id.appCount);
         appIconSize = findViewById(R.id.appIconSize);
-        chooseColor = findViewById(R.id.butChooseColor);
-        transparentColor = findViewById(R.id.butTransparentColor);
+        chooseButtonColor = findViewById(R.id.butChooseColor);
+        transparentButtonColor = findViewById(R.id.butTransparentColor);
         dragButton = findViewById(R.id.dragFloatindButton);
         dragAppPanel = findViewById(R.id.dragAppPanel);
         enableAnimation = findViewById(R.id.enableAnimation);
@@ -204,6 +207,8 @@ public class SettingActivity extends AppCompatActivity {
         darkeningBehindSwitch = findViewById(R.id.darkeningBehindSwitch);
         serviceLauncher = (SwitchCompat) getLayoutInflater().inflate(R.layout.launch_layout, null);
         blacklistView = (ListView) getLayoutInflater().inflate(R.layout.app_list, null);
+        appBarChooseColorButton = findViewById(R.id.appBarChooseColorButton);
+        appBarChooseTransparentButton = findViewById(R.id.appBarChooseTransparentButton);
 
         blacklistDialog = new Dialog(SettingActivity.this);
         blacklistDialog.setContentView(blacklistView);
@@ -269,7 +274,7 @@ public class SettingActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
-        transparentColor.setOnClickListener(view -> {
+        transparentButtonColor.setOnClickListener(__ -> {
             settingsManager.saveButtonColor(Color.TRANSPARENT);
             sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, Color.TRANSPARENT);
         });
@@ -277,7 +282,7 @@ public class SettingActivity extends AppCompatActivity {
             launchServiceWithCheck(serviceLauncher.isChecked());
         });
 
-        chooseColor.setOnClickListener(new View.OnClickListener() {
+        chooseButtonColor.setOnClickListener(new View.OnClickListener() {
 
             int defaultColor = settingsManager.getButtonDefaultColor();
             int oldColor = defaultColor;
@@ -297,7 +302,44 @@ public class SettingActivity extends AppCompatActivity {
                             sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, selectedColor);
                         })
                         .setNegativeButton(getResources().getString(R.string.button_cancel), (dialog, which) -> sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, oldColor))
-                        .setOnColorChangedListener(color -> sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, color))
+                        .setOnColorChangedListener(color -> {
+                            sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, color);
+                        })
+                        .build();
+                colorPickerDialog.setOnDismissListener(dialogInterface -> {
+                    sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+                    colorPickerDialog = null;
+                });
+                colorPickerDialog.show();
+            }
+        });
+        appBarChooseTransparentButton.setOnClickListener(__ -> {
+            settingsManager.saveAppBarColor(Color.TRANSPARENT);
+            sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COLOR, Color.TRANSPARENT);
+        });
+        appBarChooseColorButton.setOnClickListener(new View.OnClickListener() {
+
+            int defaultColor = settingsManager.getAppBarDefaultColor();
+            int oldColor = defaultColor;
+
+            @Override
+            public void onClick(View v) {
+                oldColor = settingsManager.getAppBarColor();
+                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+                colorPickerDialog = ColorPickerDialogBuilder
+                        .with(SettingActivity.this)
+                        .setTitle(getResources().getString(R.string.choose_color))
+                        .initialColor(oldColor == Color.TRANSPARENT ? defaultColor : oldColor)
+                        .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                        .density(12)
+                        .setPositiveButton(getResources().getString(R.string.button_ok), (dialog, selectedColor, allColors) -> {
+                            settingsManager.saveAppBarColor(selectedColor);
+                            sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COLOR, selectedColor);
+                        })
+                        .setNegativeButton(getResources().getString(R.string.button_cancel), (dialog, which) -> {
+                            sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COLOR, oldColor);
+                        })
+                        .setOnColorChangedListener(color -> sendParamWithCheck(SwitcherService.ACTION_CHANGE_APPS_COLOR, color))
                         .build();
                 colorPickerDialog.setOnDismissListener(dialogInterface -> {
                     sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
