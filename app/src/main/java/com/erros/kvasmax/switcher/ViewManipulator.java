@@ -1,6 +1,7 @@
 package com.erros.kvasmax.switcher;
 
 import android.animation.Animator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -11,9 +12,14 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.AppCompatImageView;
+import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -29,8 +35,8 @@ import android.widget.LinearLayout;
 public class ViewManipulator {
 
     // layouts
-    public static final int VERTICAL = 0;
-    public static final int HORIZONTAL = 1;
+    static final int VERTICAL = 0;
+    static final int HORIZONTAL = 1;
     private final int BUTTON_POSITION_BOTTOM = 0;
     private final int BUTTON_POSITION_RIGHT = 1;
     private final int BUTTON_POSITION_LEFT = 2;
@@ -44,12 +50,15 @@ public class ViewManipulator {
     int distanceY;
     private final Context context;
     private final ISwitcherService service;
-    public boolean iconBarHaveToBeVisible = true;
+    private boolean iconBarHaveToBeVisible = true;
     // touch button
-    private ImageView buttonView;
-    private WindowManager.LayoutParams buttonParams;
+    private CustomImageView buttonView;
+    private FrameLayout.LayoutParams buttonLayoutParams;
+    // touch button parent
+    private CustomFrameLayout buttonParentView;
+    private WindowManager.LayoutParams buttonParentLayoutParams;
     // iconViews
-    private LinearLayout iconBar;
+    private CustomLinearLayout iconBar;
     private ImageView[] iconViews;
     private ScaleAnimation[] hideIconViewAnimations;
     private ScaleAnimation[] showIconViewAnimations;
@@ -57,8 +66,8 @@ public class ViewManipulator {
     private ScaleAnimation[] hideBackViewAnimations;
     private ScaleAnimation[] showBackViewAnimations;
     private WindowManager.LayoutParams iconBarParams;
-    private Animation firstAnim;
-    private Animation secondAnim;
+    private Animation[] entryAnimations;
+    private Animation[] exitAnimations;
     private Point screenSize = new Point();
     private Point fullScreenSize = new Point();
     private int pointCount;
@@ -67,12 +76,7 @@ public class ViewManipulator {
     private int iconSize;
     private int iconSizeInc;
 
-    //private int incX;
-    //private int incY;
-    //private int incWidth;
-    //private int incHeight;
     private int iconSizeMin;
-    private int padding;
     private int perIcon;
     private int incrementLength;
     private int incrementThickness;
@@ -127,7 +131,11 @@ public class ViewManipulator {
 
         calculateStatusBarHeight();
         initialiseButton(buttonLength, buttonThickness);
-        initialiseIconBar(true);
+        initialiseIconBar();
+
+        windowManager.addView(iconBar, iconBarParams);
+        windowManager.addView(buttonParentView, buttonParentLayoutParams);
+
     }
 
     public ViewManipulator(Context context, ISwitcherService service, WindowManager windowManager, int maxCount, int pointCount,
@@ -165,8 +173,12 @@ public class ViewManipulator {
 
         calculateStatusBarHeight();
         initialiseButton(buttonLength, buttonThickness);
-        initialiseIconBar(true);
+        initialiseIconBar();
         calculateButtonCoordinates();
+
+        windowManager.addView(iconBar, iconBarParams);
+        windowManager.addView(buttonParentView, buttonParentLayoutParams);
+
     }
 
     private void calculateStatusBarHeight() {
@@ -185,10 +197,11 @@ public class ViewManipulator {
         iconSizeInc = (int) Math.ceil((double) (iconSizeMax - iconSizeMin) / pointCount);
     }
 
-    private void initialiseIconBar(boolean isNewBar) {
+    private void initialiseIconBar() {
 
         iconViews = new ImageView[maxCount];
         backViews = new View[maxCount];
+
         hideBackViewAnimations = new ScaleAnimation[maxCount];
         showBackViewAnimations = new ScaleAnimation[maxCount];
         showIconViewAnimations = new ScaleAnimation[maxCount];
@@ -197,9 +210,51 @@ public class ViewManipulator {
         if (iconBar != null) {
             iconBar.removeAllViews();
         } else {
-            iconBar = new LinearLayout(context);
+            iconBar = new CustomLinearLayout(context);
             iconBar.setBackgroundResource(R.drawable.rounded_corners);
+            iconBar.setOnTouchListener(new View.OnTouchListener() {
+                private int initialX;
+                private int initialY;
+                private float initialTouchX;
+                private float initialTouchY;
+
+                @Override
+                public boolean onTouch(View view, MotionEvent event) {
+                    if (isDraggableIconBar) {
+                        switch (event.getAction()) {
+                            case MotionEvent.ACTION_DOWN:
+                                view.performClick();
+                                initialX = iconBarParams.x;
+                                initialY = iconBarParams.y;
+                                initialTouchX = event.getRawX();
+                                initialTouchY = event.getRawY();
+                                break;
+
+                            case MotionEvent.ACTION_UP:
+                                calculateDistance();
+                                service.saveWindowPositions();
+                                break;
+
+                            case MotionEvent.ACTION_MOVE:
+                                int newX = buttonPosition != BUTTON_POSITION_RIGHT
+                                        ? initialX - (int) (initialTouchX - event.getRawX()) : initialX + (int) (initialTouchX - event.getRawX());
+                                int newY = buttonPosition != BUTTON_POSITION_BOTTOM
+                                        ? initialY - (int) (initialTouchY - event.getRawY()) : initialY + (int) (initialTouchY - event.getRawY());
+                                if (newX >= 0 && screenSize.x >= newX + iconBarParams.width) {
+                                    iconBarParams.x = newX;
+                                }
+                                if (newY >= 0 && screenSize.y >= newY + iconBarParams.height) {
+                                    iconBarParams.y = newY;
+                                }
+                                updateViews();
+                                break;
+                        }
+                    }
+                    return false;
+                }
+            });
         }
+
         iconBar.setOrientation(iconBarLayout == VERTICAL ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         changeIconBarVisibility(iconBarHaveToBeVisible);
 
@@ -210,7 +265,7 @@ public class ViewManipulator {
         drawable.getPadding(paddings);
         int width = 0, height = 0;
 
-        padding = paddings.top;
+        int padding = paddings.top;
         int iconActualSize = iconSize + padding * 2;
 
         switch (iconBar.getOrientation()) {
@@ -225,10 +280,10 @@ public class ViewManipulator {
                 perIcon = height / maxCount + 1;
                 break;
         }
-        int appX = buttonParams.x - distanceX, appY = buttonParams.y - distanceY;
+        int appX = buttonParentLayoutParams.x - distanceX, appY = buttonParentLayoutParams.y - distanceY;
 
         iconBarParams = getLayoutParams(appX, appY, width, height);
-        iconBarParams.gravity = buttonParams.gravity;
+        iconBarParams.gravity = buttonParentLayoutParams.gravity;
 
         FrameLayout[] containers = new FrameLayout[maxCount];
 
@@ -252,115 +307,111 @@ public class ViewManipulator {
             container.addView(background, new FrameLayout.LayoutParams(iconActualSize, iconActualSize));
             container.addView(image, new LinearLayout.LayoutParams(iconActualSize, iconActualSize));
         }
+
         for (FrameLayout container : containers) {
             iconBar.addView(container, new LinearLayout.LayoutParams(iconActualSize, iconActualSize));
         }
-        if (isNewBar) {
 
-            windowManager.addView(iconBar, iconBarParams);
-            iconBar.setOnTouchListener(new View.OnTouchListener() {
-                private int initialX;
-                private int initialY;
-                private float initialTouchX;
-                private float initialTouchY;
-
-                @Override
-                public boolean onTouch(View view, MotionEvent event) {
-                    if (isDraggableIconBar) {
-                        switch (event.getAction()) {
-                            case MotionEvent.ACTION_DOWN:
-                                initialX = iconBarParams.x;
-                                initialY = iconBarParams.y;
-                                initialTouchX = event.getRawX();
-                                initialTouchY = event.getRawY();
-                                break;
-
-                            case MotionEvent.ACTION_UP:
-                                calculateDistance();
-                                service.saveWindowPositions();
-                                break;
-
-                            case MotionEvent.ACTION_MOVE:
-                                int newX = buttonPosition != BUTTON_POSITION_RIGHT
-                                        ? initialX - (int) (initialTouchX - event.getRawX()) : initialX + (int) (initialTouchX - event.getRawX());
-                                ;
-                                int newY = buttonPosition != BUTTON_POSITION_BOTTOM
-                                        ? initialY - (int) (initialTouchY - event.getRawY()) : initialY + (int) (initialTouchY - event.getRawY());
-                                ;
-                                if (newX >= 0 && screenSize.x >= newX + iconBarParams.width) {
-                                    iconBarParams.x = newX;
-                                }
-                                if (newY >= 0 && screenSize.y >= newY + iconBarParams.height) {
-                                    iconBarParams.y = newY;
-                                }
-                                updateViews();
-                                break;
-                        }
-                    }
-                    return false;
-                }
-            });
-        }
+        updateIconsAnimations();
 
     }
 
     private void calculateDistance() {
-        distanceX = buttonParams.x - iconBarParams.x;
-        distanceY = buttonParams.y - iconBarParams.y;
+        distanceX = buttonParentLayoutParams.x - iconBarParams.x;
+        distanceY = buttonParentLayoutParams.y - iconBarParams.y;
     }
 
     private void initialiseButton(int length, int thickness) {
-        buttonView = new ImageView(context);
-        buttonView.setBackgroundColor(buttonColor);
+        buttonLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Gravity.TOP | Gravity.LEFT);
+        buttonView = new CustomImageView(context);
         buttonView.setBackgroundResource(R.drawable.rounded_corners);
         GradientDrawable drawable = (GradientDrawable) buttonView.getBackground();
         drawable.setColor(buttonColor);
-        buttonView.setOnTouchListener(new View.OnTouchListener() {
-            boolean visible = false;
+
+        buttonView.setOnTouchListener((v, event) -> {
+            v.performClick();
+            return false;
+        });
+
+        buttonParentView = new CustomFrameLayout(context);
+        //buttonParentView.setBackgroundColor(Color.GREEN);
+        //buttonParentView.setAlpha(0.5f);
+
+        buttonParentView.addView(buttonView, buttonLayoutParams);
+        buttonParentView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
             private float touchX;
             private float touchY;
+            private boolean iconsAreUpToDate = false;
             private int checkedIconIndex = -1;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-
+                Log.e("buttonViewParent", event.getAction() + "");
+                int[] location = new int[2];
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        initialX = buttonParams.x;
-                        initialY = buttonParams.y;
+                        initialX = buttonParentLayoutParams.x;
+                        initialY = buttonParentLayoutParams.y;
                         touchX = event.getRawX();
                         touchY = event.getRawY();
+                        if (!isDraggableFloatingButton) {
+                            buttonParentView.getLocationOnScreen(location);
+                            buttonLayoutParams.leftMargin = location[0];
+                            buttonLayoutParams.topMargin = location[1] - statusBarHeight;
+                            buttonLayoutParams.width = buttonParentLayoutParams.width;
+                            buttonLayoutParams.height = buttonParentLayoutParams.height;
+                            buttonParentLayoutParams.x = 0;
+                            buttonParentLayoutParams.y = 0;
+                            buttonParentLayoutParams.width = screenSize.x;
+                            buttonParentLayoutParams.height = screenSize.y;
+                            updateViews();
+                        }
+                        iconsAreUpToDate = false;
+                        v.performClick();
                         break;
                     case MotionEvent.ACTION_UP:
                         if (!isDraggableFloatingButton) {
-                            touchX = event.getRawX();
-                            touchY = event.getRawY();
-                            int width = iconBar.getWidth();
-                            int height = iconBar.getHeight();
-                            checkedIconIndex = -1;
-                            if (visible) {
-                                for (ImageView icon : iconViews) {
-                                    icon.clearAnimation();
-                                    icon.startAnimation(secondAnim);
+                            if (iconBar.getVisibility() == View.VISIBLE) {
+                                touchX = event.getRawX();
+                                touchY = event.getRawY();
+                                int width = iconBar.getWidth();
+                                int height = iconBar.getHeight();
+                                checkedIconIndex = -1;
+                                iconBar.getLocationOnScreen(location);
+                                if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
+
+                                    int iconIndex = selectedIcon(location[0], location[1], touchX, touchY);
+                                    if (iconOrderIsDirect) iconIndex = maxCount - iconIndex - 1;
+                                    service.onTapIconWithIndex(iconIndex);
+
+                                }
+                                for (int i = 0; i < maxCount; i++) {
+                                    ImageView im = iconViews[i];
+                                    im.clearAnimation();
+                                    im.startAnimation(exitAnimations[i]);
                                 }
                                 for (View back : backViews) {
                                     back.clearAnimation();
                                     back.setVisibility(View.INVISIBLE);
                                 }
-                            }
-                            int[] location = new int[2];
-                            iconBar.getLocationOnScreen(location);
-                            if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
-
-                                int iconIndex = selectedIcon(location[0], location[1], touchX, touchY);
-                                if (iconOrderIsDirect) iconIndex = maxCount - iconIndex - 1;
-                                service.onTapIconWithIndex(iconIndex);
 
                             }
-                            visible = false;
+
+                            buttonParentLayoutParams.x = initialX;
+                            buttonParentLayoutParams.y = initialY;
+                            buttonParentLayoutParams.width = buttonLayoutParams.width;
+                            buttonParentLayoutParams.height = buttonLayoutParams.height;
+                            buttonLayoutParams.leftMargin = 0;
+                            buttonLayoutParams.topMargin = 0;
+                            buttonLayoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                            buttonLayoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+                            updateViews();
                         } else {
+
                             validateAndFixButtonPosition();
                             calculateButtonCoordinates();
                             service.saveWindowPositions();
@@ -368,49 +419,69 @@ public class ViewManipulator {
                         break;
                     case MotionEvent.ACTION_MOVE:
 
-                        int[] location = new int[2];
                         if (!isDraggableFloatingButton) {
                             touchX = event.getRawX();
                             touchY = event.getRawY();
                             buttonView.getLocationOnScreen(location);
-                            if (!visible && !isInsideView(location[0], location[1], buttonParams.width, buttonParams.height, touchX, touchY)) {
 
-                                visible = true;
+                            if (!iconsAreUpToDate
+                                    && !isInsideView(location[0],
+                                    location[1],
+                                    buttonLayoutParams.width,
+                                    buttonLayoutParams.height,
+                                    touchX,
+                                    touchY)) {
 
-                                service.updateIcons();
-                                iconBar.clearAnimation();
+                                if (iconBar.getVisibility() == View.GONE) {
 
-                                if (!iconBarHaveToBeVisible) {
                                     iconBar.setAlpha(0.0f);
-                                }
-                                changeIconBarVisibility(true);
+                                    changeIconBarVisibility(true);
 
-                                iconBar.animate().alpha(1.0f).setDuration(100).setListener(new Animator.AnimatorListener() {
-                                    @Override
-                                    public void onAnimationStart(Animator animation) {
+                                    service.updateIcons();
+                                    iconBar.clearAnimation();
 
-                                    }
+                                    iconBar.animate().alpha(1.0f).setDuration(100).setListener(new Animator.AnimatorListener() {
 
-                                    @Override
-                                    public void onAnimationEnd(Animator animation) {
-                                        for (ImageView im : iconViews) {
-                                            im.clearAnimation();
-                                            im.startAnimation(firstAnim);
+                                        @Override
+                                        public void onAnimationEnd(Animator animation) {
+                                            for (int i = 0; i < maxCount; i++) {
+                                                ImageView im = iconViews[i];
+                                                im.clearAnimation();
+                                                im.startAnimation(entryAnimations[i]);
+                                            }
                                         }
+
+                                        @Override
+                                        public void onAnimationStart(Animator animation) {
+                                        }
+
+                                        @Override
+                                        public void onAnimationCancel(Animator animation) {
+                                        }
+
+                                        @Override
+                                        public void onAnimationRepeat(Animator animation) {
+                                        }
+                                    }).start();
+
+                                    iconsAreUpToDate = true;
+
+                                } else if (iconBarHaveToBeVisible
+                                        && iconBar.getVisibility() == View.VISIBLE) {
+
+                                    service.updateIcons();
+                                    for (int i = 0; i < maxCount; i++) {
+                                        ImageView im = iconViews[i];
+                                        im.clearAnimation();
+                                        im.startAnimation(entryAnimations[i]);
                                     }
 
-                                    @Override
-                                    public void onAnimationCancel(Animator animation) {
+                                    iconsAreUpToDate = true;
+                                }
+                            }
 
-                                    }
 
-                                    @Override
-                                    public void onAnimationRepeat(Animator animation) {
-
-                                    }
-                                }).start();
-
-                            } else {
+                            if (iconBar.getVisibility() == View.VISIBLE) {
                                 iconBar.getLocationOnScreen(location);
                                 int width = iconBarParams.width;
                                 int height = iconBarParams.height;
@@ -437,13 +508,13 @@ public class ViewManipulator {
 
                             int newX = initialX - (int) (touchX - event.getRawX());
                             int newY = initialY - (int) (touchY - event.getRawY());
-                            if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonParams.width) {
-                                buttonParams.x = newX;
-                                buttonParams.y = 0;
+                            if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonParentLayoutParams.width) {
+                                buttonParentLayoutParams.x = newX;
+                                buttonParentLayoutParams.y = 0;
                             }
-                            if (buttonPosition != BUTTON_POSITION_BOTTOM && newY >= 0 && screenSize.y >= newY + buttonParams.height) {
-                                buttonParams.y = newY;
-                                buttonParams.x = 0;
+                            if (buttonPosition != BUTTON_POSITION_BOTTOM && newY >= 0 && screenSize.y >= newY + buttonParentLayoutParams.height) {
+                                buttonParentLayoutParams.y = newY;
+                                buttonParentLayoutParams.x = 0;
                             }
                             updateViews();
                         }
@@ -452,6 +523,7 @@ public class ViewManipulator {
                 return false;
             }
         });
+
         int buttonThickness = getThickness(thickness),
                 buttonLength = getLength(length);
         switch (screenOrientation) {
@@ -463,7 +535,7 @@ public class ViewManipulator {
                 break;
         }
 
-        windowManager.addView(buttonView, buttonParams);
+
     }
 
     private ScaleAnimation createHideIconViewAnimation() {
@@ -491,10 +563,6 @@ public class ViewManipulator {
         animation.setFillAfter(true);
         animation.setFillBefore(false);
         animation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
 
             @Override
             public void onAnimationEnd(Animation animation) {
@@ -503,8 +571,10 @@ public class ViewManipulator {
             }
 
             @Override
+            public void onAnimationStart(Animation animation) {
+            }
+            @Override
             public void onAnimationRepeat(Animation animation) {
-
             }
         });
         return animation;
@@ -562,22 +632,22 @@ public class ViewManipulator {
     }
 
     private void validateAndFixButtonPosition() {
-        if (buttonParams.x < screenSize.x * 0.01f) {
-            buttonParams.x = 0;
+        if (buttonParentLayoutParams.x < screenSize.x * 0.01f) {
+            buttonParentLayoutParams.x = 0;
         }
-        if (screenSize.x - (buttonParams.x + buttonParams.width) < screenSize.x * 0.01f) {
-            buttonParams.x = screenSize.x - buttonParams.width;
+        if (screenSize.x - (buttonParentLayoutParams.x + buttonParentLayoutParams.width) < screenSize.x * 0.01f) {
+            buttonParentLayoutParams.x = screenSize.x - buttonParentLayoutParams.width;
         }
-        if (buttonParams.y < screenSize.y * 0.01f) {
-            buttonParams.y = 0;
+        if (buttonParentLayoutParams.y < screenSize.y * 0.01f) {
+            buttonParentLayoutParams.y = 0;
         }
-        if (screenSize.y - (buttonParams.y + buttonParams.height) < screenSize.y * 0.01f) {
-            buttonParams.y = screenSize.y - buttonParams.height;
+        if (screenSize.y - (buttonParentLayoutParams.y + buttonParentLayoutParams.height) < screenSize.y * 0.01f) {
+            buttonParentLayoutParams.y = screenSize.y - buttonParentLayoutParams.height;
         }
     }
 
     private void updateViews() {
-        windowManager.updateViewLayout(buttonView, buttonParams);
+        windowManager.updateViewLayout(buttonParentView, buttonParentLayoutParams);
         windowManager.updateViewLayout(iconBar, iconBarParams);
     }
 
@@ -613,12 +683,12 @@ public class ViewManipulator {
 
 
     public void changeButtonThickness(int value) {
-        changeThickness(buttonParams, value);
+        changeThickness(buttonParentLayoutParams, value);
         updateViews();
     }
 
     public void changeButtonLength(int value) {
-        changeLength(buttonParams, value);
+        changeLength(buttonParentLayoutParams, value);
         updateViews();
     }
 
@@ -628,13 +698,13 @@ public class ViewManipulator {
 
     public void setMaxCount(int maxCount) {
         this.maxCount = maxCount;
-        initialiseIconBar(false);
+        initialiseIconBar();
         updateViews();
     }
 
     public void changeIconSize(int value) {
         this.iconSize = calculateIconSize(value);
-        initialiseIconBar(false);
+        initialiseIconBar();
         updateViews();
     }
 
@@ -653,61 +723,85 @@ public class ViewManipulator {
 
     public void setAnimation(int animation) {
         this.iconAnim = animation;
+
+        updateIconsAnimations();
+
+    }
+
+    private void updateIconsAnimations() {
+
+        int entryAnimationRes = 0;
+        int exitAnimationRes = 0;
+
         switch (iconBarLayout) {
             case VERTICAL:
-                switch (animation) {
+                switch (iconAnim) {
                     case APP_ANIMATION_SLIDE:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.slide_from_left);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.slide_to_left);
+                        entryAnimationRes = R.anim.slide_from_left;
+                        exitAnimationRes = R.anim.slide_to_left;
                         break;
                     case APP_ANIMATION_SLIDE_ANOTHER:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.slide_from_right);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.slide_to_right);
+                        entryAnimationRes = R.anim.slide_from_right;
+                        exitAnimationRes = R.anim.slide_to_right;
                         break;
                     case APP_ANIMATION_EMERGE:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.emerge);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.plunge);
+                        entryAnimationRes = R.anim.emerge;
+                        exitAnimationRes = R.anim.plunge;
                         break;
                 }
                 break;
             case HORIZONTAL:
-                switch (animation) {
+                switch (iconAnim) {
                     case APP_ANIMATION_SLIDE:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.slide_from_bottom);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.slide_to_bottom);
+                        entryAnimationRes = R.anim.slide_from_bottom;
+                        exitAnimationRes = R.anim.slide_to_bottom;
                         break;
                     case APP_ANIMATION_SLIDE_ANOTHER:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.slide_from_top);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.slide_to_top);
+                        entryAnimationRes = R.anim.slide_from_top;
+                        exitAnimationRes = R.anim.slide_to_top;
                         break;
                     case APP_ANIMATION_EMERGE:
-                        firstAnim = AnimationUtils.loadAnimation(context, R.anim.emerge);
-                        secondAnim = AnimationUtils.loadAnimation(context, R.anim.plunge);
+                        entryAnimationRes = R.anim.emerge;
+                        exitAnimationRes = R.anim.plunge;
                         break;
                 }
                 break;
         }
-        secondAnim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
 
-            }
+        if (entryAnimationRes == 0
+                || exitAnimationRes == 0) {
+            return;
+        }
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                if (!iconBarHaveToBeVisible) {
-                    changeIconBarVisibility(true);
+        this.entryAnimations = new Animation[maxCount];
+        this.exitAnimations = new Animation[maxCount];
+
+        for (int i = 0; i < maxCount; i++) {
+            entryAnimations[i] = AnimationUtils.loadAnimation(context, entryAnimationRes);
+            exitAnimations[i] = AnimationUtils.loadAnimation(context, exitAnimationRes);
+        }
+
+        for (Animation anim : exitAnimations) {
+            anim.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
                 }
-                for (ImageView iconView : iconViews) {
-                    iconView.setImageDrawable(null);
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    if (!iconBarHaveToBeVisible) {
+                        changeIconBarVisibility(false);
+                    }
+                    for (ImageView im : iconViews) {
+                        im.setImageDrawable(null);
+                    }
                 }
-            }
 
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+        }
     }
 
     public void forceIconBarToBeVisible() {
@@ -732,15 +826,15 @@ public class ViewManipulator {
 
     public void changeIconBarLayout(int layout) {
         iconBarLayout = layout;
-        initialiseIconBar(false);
+        initialiseIconBar();
         switch (buttonPosition) {
             case BUTTON_POSITION_BOTTOM:
                 iconBarParams.x = 0;
-                iconBarParams.y = buttonParams.height;
+                iconBarParams.y = buttonParentLayoutParams.height;
                 break;
             case BUTTON_POSITION_RIGHT:
             case BUTTON_POSITION_LEFT:
-                iconBarParams.x = buttonParams.width;
+                iconBarParams.x = buttonParentLayoutParams.width;
                 iconBarParams.y = 0;
                 break;
         }
@@ -751,7 +845,7 @@ public class ViewManipulator {
 
     public void removeViews() {
         windowManager.removeView(iconBar);
-        windowManager.removeView(buttonView);
+        windowManager.removeView(buttonParentView);
     }
 
     private void updateScreenSize() {
@@ -763,7 +857,7 @@ public class ViewManipulator {
 
     private WindowManager.LayoutParams getLayoutParams(int x, int y, int width, int height) {
         WindowManager.LayoutParams Params = new WindowManager.LayoutParams(
-                getViewType(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+                getViewType(),
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, // | WindowManager.LayoutParams.FLAG_DIM_BEHIND,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         Params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -772,7 +866,6 @@ public class ViewManipulator {
         Params.width = width;
         Params.height = height;
         return Params;
-        /* FIXME  WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_DIM_BEHIND  | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |WindowManager.LayoutParams.FLAG_FULLSCREEN;*/
     }
 
     public void dragFloatingButton(boolean value) {
@@ -800,16 +893,16 @@ public class ViewManipulator {
         screenOrientation = orientation;
         switch (screenOrientation) {
             case Configuration.ORIENTATION_PORTRAIT:
-                buttonParams.x = buttonPortraitX;
-                buttonParams.y = buttonPortraitY;
+                buttonParentLayoutParams.x = buttonPortraitX;
+                buttonParentLayoutParams.y = buttonPortraitY;
                 break;
             case Configuration.ORIENTATION_LANDSCAPE:
-                buttonParams.x = buttonLandscapeX;
-                buttonParams.y = buttonLandscapeY;
+                buttonParentLayoutParams.x = buttonLandscapeX;
+                buttonParentLayoutParams.y = buttonLandscapeY;
                 break;
         }
-        iconBarParams.x = buttonParams.x - distanceX;
-        iconBarParams.y = buttonParams.y - distanceY;
+        iconBarParams.x = buttonParentLayoutParams.x - distanceX;
+        iconBarParams.y = buttonParentLayoutParams.y - distanceY;
 
         updateViews();
 
@@ -820,7 +913,6 @@ public class ViewManipulator {
         drawable.setColor(color);
     }
 
-
     public void changeButtonPosition(int position) {
         int previousPosition = this.buttonPosition;
         this.buttonPosition = position;
@@ -828,36 +920,36 @@ public class ViewManipulator {
 
         if ((previousPosition == BUTTON_POSITION_LEFT && position == BUTTON_POSITION_RIGHT)
                 || (previousPosition == BUTTON_POSITION_RIGHT && position == BUTTON_POSITION_LEFT)) {
-            x = buttonParams.x;
-            y = buttonParams.y;
-            length = buttonParams.height;
-            thickness = buttonParams.width;
+            x = buttonParentLayoutParams.x;
+            y = buttonParentLayoutParams.y;
+            length = buttonParentLayoutParams.height;
+            thickness = buttonParentLayoutParams.width;
         } else {
             switch (screenOrientation) {
                 case Configuration.ORIENTATION_PORTRAIT:
                     if (position == BUTTON_POSITION_BOTTOM) {
                         y = 0;
-                        x = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParams.height)) * (screenSize.x - buttonParams.height));
-                        thickness = buttonParams.width;
-                        length = buttonParams.height;
+                        x = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
+                        thickness = buttonParentLayoutParams.width;
+                        length = buttonParentLayoutParams.height;
                     } else {
                         x = 0;
-                        y = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParams.width)) * (screenSize.y - buttonParams.width));
-                        thickness = buttonParams.height;
-                        length = buttonParams.width;
+                        y = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
+                        thickness = buttonParentLayoutParams.height;
+                        length = buttonParentLayoutParams.width;
                     }
                     break;
                 case Configuration.ORIENTATION_LANDSCAPE:
                     if (position == BUTTON_POSITION_BOTTOM) {
                         y = 0;
-                        x = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParams.height)) * (screenSize.x - buttonParams.height));
-                        thickness = buttonParams.width;
-                        length = buttonParams.height;
+                        x = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
+                        thickness = buttonParentLayoutParams.width;
+                        length = buttonParentLayoutParams.height;
                     } else {
                         x = 0;
-                        y = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParams.width)) * (screenSize.y - buttonParams.width));
-                        thickness = buttonParams.height;
-                        length = buttonParams.width;
+                        y = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
+                        thickness = buttonParentLayoutParams.height;
+                        length = buttonParentLayoutParams.width;
                     }
                     break;
             }
@@ -871,26 +963,27 @@ public class ViewManipulator {
 
     public void avoidKeyboard(boolean value) {
         avoidKeyboard = value;
-        buttonParams.flags = changeFlagsToAvoidKeyboard(buttonParams.flags, avoidKeyboard);
+        buttonParentLayoutParams.flags = changeFlagsToAvoidKeyboard(buttonParentLayoutParams.flags, avoidKeyboard);
     }
 
     private void calculateButtonCoordinates() {
         switch (screenOrientation) {
             case Configuration.ORIENTATION_PORTRAIT:
-                buttonPortraitX = buttonParams.x;
-                buttonPortraitY = buttonParams.y;
-                buttonLandscapeX = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParams.width)) * (screenSize.y - buttonParams.width));
-                buttonLandscapeY = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParams.height)) * (screenSize.x - buttonParams.height));
+                buttonPortraitX = buttonParentLayoutParams.x;
+                buttonPortraitY = buttonParentLayoutParams.y;
+                buttonLandscapeX = (int) Math.ceil(((double) (buttonPortraitX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
+                buttonLandscapeY = (int) Math.ceil(((double) (buttonPortraitY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
                 break;
             case Configuration.ORIENTATION_LANDSCAPE:
-                buttonLandscapeX = buttonParams.x;
-                buttonLandscapeY = buttonParams.y;
-                buttonPortraitX = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParams.width)) * (screenSize.y - buttonParams.width));
-                buttonPortraitY = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParams.height)) * (screenSize.x - buttonParams.height));
+                buttonLandscapeX = buttonParentLayoutParams.x;
+                buttonLandscapeY = buttonParentLayoutParams.y;
+                buttonPortraitX = (int) Math.ceil(((double) (buttonLandscapeX) / (screenSize.x - buttonParentLayoutParams.width)) * (screenSize.y - buttonParentLayoutParams.width));
+                buttonPortraitY = (int) Math.ceil(((double) (buttonLandscapeY) / (screenSize.y - buttonParentLayoutParams.height)) * (screenSize.x - buttonParentLayoutParams.height));
                 break;
         }
     }
 
+    @SuppressLint("RtlHardcoded")
     private void updateButtonLayoutParams(int position, int x, int y, int length, int thickness) {
         int gravity = 0;
         switch (position) {
@@ -904,28 +997,35 @@ public class ViewManipulator {
                 gravity = Gravity.TOP | Gravity.LEFT;
                 break;
         }
-        if (buttonParams == null) {
-            buttonParams = new WindowManager.LayoutParams(
-                    getViewType(), // TYPE_APPLICATION_OVERLAY ---- TYPE_SYSTEM_OVERLAY
+        if (buttonParentLayoutParams == null) {
+            buttonParentLayoutParams = new WindowManager.LayoutParams(
+                    getViewType(),
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,// | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                    PixelFormat.TRANSLUCENT);
-            buttonParams.flags = changeFlagsToAvoidKeyboard(this.buttonParams.flags, this.avoidKeyboard);
+                    PixelFormat.TRANSPARENT);
+            // disable animations
+            try {
+                int currentFlags = (Integer) buttonParentLayoutParams.getClass().getField("privateFlags").get(buttonParentLayoutParams);
+                buttonParentLayoutParams.getClass().getField("privateFlags").set(buttonParentLayoutParams, currentFlags | 0x00000040);
+            } catch (Exception e) {
+                // shit happens
+            }
         }
-        buttonParams.gravity = gravity;
-        buttonParams.x = x;
-        buttonParams.y = y;
+        buttonParentLayoutParams.flags = changeFlagsToAvoidKeyboard(this.buttonParentLayoutParams.flags, this.avoidKeyboard);
+        buttonParentLayoutParams.gravity = gravity;
+        buttonParentLayoutParams.x = x;
+        buttonParentLayoutParams.y = y;
         if (buttonPosition == BUTTON_POSITION_BOTTOM) {
-            buttonParams.width = length;
-            buttonParams.height = thickness;
+            buttonParentLayoutParams.width = length;
+            buttonParentLayoutParams.height = thickness;
         } else {
-            buttonParams.width = thickness;
-            buttonParams.height = length;
+            buttonParentLayoutParams.width = thickness;
+            buttonParentLayoutParams.height = length;
         }
     }
 
 
     private void updateIconBarPosition(int position, int previousPosition) {
-        iconBarParams.gravity = buttonParams.gravity;
+        iconBarParams.gravity = buttonParentLayoutParams.gravity;
         if (position == BUTTON_POSITION_BOTTOM || previousPosition == BUTTON_POSITION_BOTTOM) {
             iconBarParams.y = screenSize.y - iconBarParams.height - iconBarParams.y - statusBarHeight;
         }
@@ -950,6 +1050,77 @@ public class ViewManipulator {
             return flags | flag;
         } else {
             return flags & ~flag;
+        }
+    }
+
+    private static class CustomImageView extends AppCompatImageView {
+
+        public CustomImageView(Context context) {
+            super(context);
+        }
+
+        public CustomImageView(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public CustomImageView(Context context, AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+        }
+
+        @Override
+        public boolean performClick() {
+            super.performClick();
+            return true;
+        }
+    }
+
+    private static class CustomLinearLayout extends LinearLayout {
+
+        public CustomLinearLayout(Context context) {
+            super(context);
+        }
+
+        public CustomLinearLayout(Context context, @Nullable AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public CustomLinearLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+        }
+
+        public CustomLinearLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+            super(context, attrs, defStyleAttr, defStyleRes);
+        }
+
+        @Override
+        public boolean performClick() {
+            super.performClick();
+            return true;
+        }
+    }
+
+    private static class CustomFrameLayout extends FrameLayout {
+
+        public CustomFrameLayout(Context context) {
+            super(context);
+        }
+
+        public CustomFrameLayout(Context context, @Nullable AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public CustomFrameLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+        }
+
+        public CustomFrameLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+            super(context, attrs, defStyleAttr, defStyleRes);
+        }
+
+        @Override
+        public boolean performClick() {
+            super.performClick();
+            return true;
         }
     }
 

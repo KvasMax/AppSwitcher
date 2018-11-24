@@ -125,14 +125,14 @@ public class SettingActivity extends AppCompatActivity {
         dragAppPanel.setChecked(false);
         saveSettings();
 
-        sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+        sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (!blacklistDialog.isShowing() && colorPickerDialog == null)
-            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
     }
 
     public void initialise() {
@@ -217,7 +217,8 @@ public class SettingActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
         appAnim.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -226,7 +227,8 @@ public class SettingActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
         appLayout.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -243,7 +245,8 @@ public class SettingActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
         appOrder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -252,7 +255,8 @@ public class SettingActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
         transparentColor.setOnClickListener(view -> {
             settingsManager.saveButtonColor(Color.TRANSPARENT);
@@ -270,7 +274,7 @@ public class SettingActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 oldColor = settingsManager.getButtonColor();
-                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+                sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
                 colorPickerDialog = ColorPickerDialogBuilder
                         .with(SettingActivity.this)
                         .setTitle(getResources().getString(R.string.choose_color))
@@ -285,7 +289,7 @@ public class SettingActivity extends AppCompatActivity {
                         .setOnColorChangedListener(color -> sendParamWithCheck(SwitcherService.ACTION_CHANGE_BUTTON_COLOR, color))
                         .build();
                 colorPickerDialog.setOnDismissListener(dialogInterface -> {
-                    sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+                    sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
                     colorPickerDialog = null;
                 });
                 colorPickerDialog.show();
@@ -311,9 +315,12 @@ public class SettingActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) { }
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) { }
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         };
 
         thicknessChange.setOnSeekBarChangeListener(seekListener);
@@ -326,7 +333,7 @@ public class SettingActivity extends AppCompatActivity {
         enableAnimation.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_ANIMATION_ENABLE, isChecked ? 1 : 0));
         enableVibration.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_LAUNCH_VIBRATION_ENABLE, isChecked ? 1 : 0));
         avoidKeyboard.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_BUTTON_AVOID_KEYBOARD, isChecked ? 1 : 0));
-        startOnBoot.setOnCheckedChangeListener((__, isChecked) -> settingsManager.saveStartingOnBoot(isChecked) );
+        startOnBoot.setOnCheckedChangeListener((__, isChecked) -> settingsManager.saveStartingOnBoot(isChecked));
         blacklistButton.setOnClickListener(__ -> {
             sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
             ((BaseAdapter) blacklistView.getAdapter()).notifyDataSetChanged();
@@ -410,8 +417,9 @@ public class SettingActivity extends AppCompatActivity {
     private void launchService() {
         saveSettings();
         Intent intent = new Intent(this, SwitcherService.class);
-        intent.putExtra(SwitcherService.PARAM, 0);
-        startService(intent);
+        intent.setAction(SwitcherService.ACTION_APPS_VISIBILITY);
+        intent.putExtra(SwitcherService.PARAM, 1);
+        ContextCompat.startForegroundService(this, intent);
     }
 
     private void showDisableNotificationDialog(Runnable runnable) {
@@ -497,7 +505,7 @@ public class SettingActivity extends AppCompatActivity {
             Intent intent = new Intent(this, SwitcherService.class);
             intent.setAction(action);
             intent.putExtra(SwitcherService.PARAM, param);
-            startService(intent);
+            ContextCompat.startForegroundService(this, intent);
         }
     }
 

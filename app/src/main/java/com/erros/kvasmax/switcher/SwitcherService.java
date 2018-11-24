@@ -5,6 +5,8 @@ package com.erros.kvasmax.switcher;
 
 import android.app.Activity;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
@@ -15,6 +17,7 @@ import android.graphics.Point;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Vibrator;
+import android.support.v4.app.NotificationCompat;
 import android.view.WindowManager;
 
 import java.util.Set;
@@ -28,6 +31,8 @@ public class SwitcherService extends Service implements ISwitcherService {
     ViewManipulator viewManipulator;
 
     //Constants
+    public static final int NOTIFICATION_ID = 666;
+
     public static final String ACTION_FINISH = "ACTION_FINISH";
 
     public static final String PARAM = "SWITCHER_PARAM";
@@ -51,21 +56,27 @@ public class SwitcherService extends Service implements ISwitcherService {
 
     public static final String ACTION_UPDATE_BLACKLIST = "ACTION_UPDATE_BLACKLIST";
 
-    public void onCreate() {
-        super.onCreate();
+    public static Notification getNotification(Context context) {
 
-        SwitcherApplication.serviceIsRunning.set(true);
+        final String channelId = "Main";
 
-        Notification notification = KamikadzeService.getNotification(this);
-        startForeground(KamikadzeService.NOTIFICATION_ID, notification);
-        if (Build.VERSION.SDK_INT < 25) {
-            Intent kamikadzeIntent = new Intent(this, KamikadzeService.class);
-            startService(kamikadzeIntent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (notificationManager != null
+                    && notificationManager.getNotificationChannels().isEmpty()) {
+                NotificationChannel notificationChannel = new NotificationChannel(channelId, channelId, NotificationManager.IMPORTANCE_LOW);
+                notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+                notificationManager.createNotificationChannel(notificationChannel);
+            }
         }
 
-        settingsManager = SettingsManager.getInstance(this);
-        initialise();
-        update();
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
+            builder.setPriority(Notification.PRIORITY_MIN);
+        else
+            builder.setPriority(NotificationManager.IMPORTANCE_LOW);
+
+        return builder.build();
     }
 
     private void initialise() {
@@ -128,59 +139,20 @@ public class SwitcherService extends Service implements ISwitcherService {
         viewManipulator.dragIconBar(settingsManager.isDragableAppBar());
     }
 
+    public void onCreate() {
+        super.onCreate();
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent == null) {
-            viewManipulator.allowIconBarToBeHidden();
-        } else {
+        SwitcherApplication.serviceIsRunning.set(true);
 
-            int param = intent.getIntExtra(PARAM, 0);
-            if (intent.getAction() == null || intent.getAction().equals(ACTION_APPS_VISIBILITY)) {
-                boolean activityIsVisible = param == 0;
-                if (activityIsVisible) {
-                    viewManipulator.forceIconBarToBeVisible();
-                } else {
-                    viewManipulator.allowIconBarToBeHidden();
-                }
-            } else if (intent.getAction().equals(ACTION_FINISH)) {
-                viewManipulator.removeViews();
-                stopSelf();
-            } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_BUTTON)) {
-                viewManipulator.dragFloatingButton(param == 1);
-            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_POSITION)) {
-                viewManipulator.changeButtonPosition(param);
-            } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_APPS)) {
-                viewManipulator.dragIconBar(param == 1);
-            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_THICKNESS)) {
-                viewManipulator.changeButtonThickness(param);
-            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_LENGTH)) {
-                viewManipulator.changeButtonLength(param);
-            } else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_COLOR)) {
-                viewManipulator.setButtonColor(param);
-            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_COUNT)) {
-                appSwitcher.setMaxCount(param);
-                viewManipulator.setMaxCount(param);
-            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ICON_SIZE)) {
-                viewManipulator.changeIconSize(param);
-            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ORDER)) {
-                boolean iconOrderIsDirect = param == 0;
-                viewManipulator.changeIconOrder(iconOrderIsDirect);
-            } else if (intent.getAction().equals(ACTION_LAUNCH_ANIMATION_ENABLE)) {
-                appSwitcher.useAnimation(param == 1);
-            } else if (intent.getAction().equals(ACTION_LAUNCH_VIBRATION_ENABLE)) {
-                appSwitcher.useVibration(param == 1);
-            } else if (intent.getAction().equals(ACTION_BUTTON_AVOID_KEYBOARD)) {
-                viewManipulator.avoidKeyboard(param == 1);
-            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_LAYOUT)) {
-                viewManipulator.changeIconBarLayout(param);
-            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ANIM)) {
-                viewManipulator.setAnimation(param);
-            } else if (intent.getAction().equals(ACTION_UPDATE_BLACKLIST)) {
-                appSwitcher.updateBlacklist(settingsManager.getBlacklist());
-            }
+        Notification notification = getNotification(this);
+        startForeground(NOTIFICATION_ID, notification);
+        if (Build.VERSION.SDK_INT < 25) {
+            Intent kamikadzeIntent = new Intent(this, KamikadzeService.class);
+            startService(kamikadzeIntent);
         }
-        return START_STICKY;
+
+        settingsManager = SettingsManager.getInstance(this);
+        initialise();
     }
 
 
@@ -227,6 +199,60 @@ public class SwitcherService extends Service implements ISwitcherService {
         settingsManager.saveButtonLandscapeCoordinates(pos);
         pos = viewManipulator.getIconBarDistance();
         settingsManager.saveAppBarDistance(pos);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null
+                && intent.getAction() != null) {
+
+            int param = intent.getIntExtra(PARAM, 0);
+
+            if (intent.getAction().equals(ACTION_APPS_VISIBILITY)) {
+                boolean activityIsVisible = param == 1;
+                if (activityIsVisible) {
+                    viewManipulator.forceIconBarToBeVisible();
+                } else {
+                    viewManipulator.allowIconBarToBeHidden();
+                }
+            } else if (intent.getAction().equals(ACTION_FINISH)) {
+                viewManipulator.removeViews();
+                stopSelf();
+            } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_BUTTON)) {
+                viewManipulator.dragFloatingButton(param == 1);
+            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_POSITION)) {
+                viewManipulator.changeButtonPosition(param);
+            } else if (intent.getAction().contains(ACTION_ALLOW_DRAG_APPS)) {
+                viewManipulator.dragIconBar(param == 1);
+            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_THICKNESS)) {
+                viewManipulator.changeButtonThickness(param);
+            } else if (intent.getAction().contains(ACTION_CHANGE_BUTTON_LENGTH)) {
+                viewManipulator.changeButtonLength(param);
+            } else if (intent.getAction().equals(ACTION_CHANGE_BUTTON_COLOR)) {
+                viewManipulator.setButtonColor(param);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_COUNT)) {
+                appSwitcher.setMaxCount(param);
+                viewManipulator.setMaxCount(param);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ICON_SIZE)) {
+                viewManipulator.changeIconSize(param);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ORDER)) {
+                boolean iconOrderIsDirect = param == 0;
+                viewManipulator.changeIconOrder(iconOrderIsDirect);
+            } else if (intent.getAction().equals(ACTION_LAUNCH_ANIMATION_ENABLE)) {
+                appSwitcher.useAnimation(param == 1);
+            } else if (intent.getAction().equals(ACTION_LAUNCH_VIBRATION_ENABLE)) {
+                appSwitcher.useVibration(param == 1);
+            } else if (intent.getAction().equals(ACTION_BUTTON_AVOID_KEYBOARD)) {
+                viewManipulator.avoidKeyboard(param == 1);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_LAYOUT)) {
+                viewManipulator.changeIconBarLayout(param);
+            } else if (intent.getAction().equals(ACTION_CHANGE_APPS_ANIM)) {
+                viewManipulator.setAnimation(param);
+            } else if (intent.getAction().equals(ACTION_UPDATE_BLACKLIST)) {
+                appSwitcher.updateBlacklist(settingsManager.getBlacklist());
+            }
+        }
+        return START_STICKY;
     }
 
 }
