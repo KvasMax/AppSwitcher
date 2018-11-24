@@ -228,6 +228,7 @@ public class ViewManipulator {
             iconBar = new CustomLinearLayout(context);
             iconBar.setBackgroundResource(R.drawable.rounded_corners);
             iconBar.setOnTouchListener(new View.OnTouchListener() {
+
                 private int initialX;
                 private int initialY;
                 private float initialTouchX;
@@ -265,7 +266,7 @@ public class ViewManipulator {
                                 break;
                         }
                     }
-                    return false;
+                    return true;
                 }
             });
         }
@@ -357,9 +358,10 @@ public class ViewManipulator {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int[] location = new int[2];
+                final int[] location = new int[2];
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        iconsAreUpToDate = false;
                         initialX = buttonLayoutParams.x;
                         initialY = buttonLayoutParams.y;
                         touchX = event.getRawX();
@@ -367,16 +369,16 @@ public class ViewManipulator {
                         if (!isDraggableFloatingButton) {
                             //TODO show background
                         }
-                        iconsAreUpToDate = false;
                         v.performClick();
                         break;
                     case MotionEvent.ACTION_UP:
+                        iconsAreUpToDate = false;
                         if (!isDraggableFloatingButton) {
                             if (iconBar.getVisibility() == View.VISIBLE) {
                                 touchX = event.getRawX();
                                 touchY = event.getRawY();
-                                int width = iconBar.getWidth();
-                                int height = iconBar.getHeight();
+                                final int width = iconBar.getWidth();
+                                final int height = iconBar.getHeight();
                                 checkedIconIndex = -1;
                                 iconBar.getLocationOnScreen(location);
                                 if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
@@ -387,7 +389,7 @@ public class ViewManipulator {
 
                                 }
                                 for (int i = 0; i < maxCount; i++) {
-                                    ImageView im = iconViews[i];
+                                    final ImageView im = iconViews[i];
                                     im.clearAnimation();
                                     im.startAnimation(exitAnimations[i]);
                                 }
@@ -424,18 +426,20 @@ public class ViewManipulator {
 
                                 if (iconBar.getVisibility() == View.GONE) {
 
-                                    iconBar.setAlpha(0.0f);
-                                    changeIconBarVisibility(true);
+                                    iconsAreUpToDate = true;
 
                                     service.updateIcons();
+
                                     iconBar.clearAnimation();
+                                    iconBar.setAlpha(0.0f);
+                                    changeIconBarVisibility(true);
 
                                     iconBar.animate().alpha(1.0f).setDuration(100).setListener(new Animator.AnimatorListener() {
 
                                         @Override
                                         public void onAnimationEnd(Animator animation) {
                                             for (int i = 0; i < maxCount; i++) {
-                                                ImageView im = iconViews[i];
+                                                final ImageView im = iconViews[i];
                                                 im.clearAnimation();
                                                 im.startAnimation(entryAnimations[i]);
                                             }
@@ -443,14 +447,10 @@ public class ViewManipulator {
 
                                         @Override
                                         public void onAnimationStart(Animator animation) {
-                                            iconsAreUpToDate = true;
                                         }
-
                                         @Override
                                         public void onAnimationCancel(Animator animation) {
-                                            iconsAreUpToDate = false;
                                         }
-
                                         @Override
                                         public void onAnimationRepeat(Animator animation) {
                                         }
@@ -461,24 +461,26 @@ public class ViewManipulator {
                                 } else if (iconBarHaveToBeVisible
                                         && iconBar.getVisibility() == View.VISIBLE) {
 
+                                    iconsAreUpToDate = true;
+
                                     service.updateIcons();
+
                                     for (int i = 0; i < maxCount; i++) {
-                                        ImageView im = iconViews[i];
+                                        final ImageView im = iconViews[i];
                                         im.clearAnimation();
                                         im.startAnimation(entryAnimations[i]);
                                     }
 
-                                    iconsAreUpToDate = true;
                                 }
                             }
 
                             if (iconBar.getVisibility() == View.VISIBLE) {
 
                                 iconBar.getLocationOnScreen(location);
-                                int width = iconBarParams.width;
-                                int height = iconBarParams.height;
+                                final int width = iconBarParams.width;
+                                final int height = iconBarParams.height;
                                 if (isInsideView(location[0], location[1], width, height, touchX, touchY)) {
-                                    int iconIndex = selectedIcon(location[0], location[1], touchX, touchY);
+                                    final int iconIndex = selectedIcon(location[0], location[1], touchX, touchY);
                                     if (iconIndex != checkedIconIndex) {
                                         showBacklightViewForIndex(iconIndex);
                                         hideIconViewForIndex(iconIndex);
@@ -499,25 +501,32 @@ public class ViewManipulator {
 
                         } else {
 
-                            int newX = initialX - (int) (touchX - event.getRawX());
-                            int newY = initialY - (int) (touchY - event.getRawY());
-                            if (buttonPosition == BUTTON_POSITION_BOTTOM && newX >= 0 && screenSize.x >= newX + buttonLayoutParams.width) {
+                            final int newX = initialX - (int) (touchX - event.getRawX());
+                            final int newY = initialY - (int) (touchY - event.getRawY());
+                            if (buttonPosition == BUTTON_POSITION_BOTTOM
+                                    && newX >= 0
+                                    && screenSize.x >= newX + buttonLayoutParams.width) {
+
                                 buttonLayoutParams.x = newX;
                                 buttonLayoutParams.y = 0;
+
                             }
-                            if (buttonPosition != BUTTON_POSITION_BOTTOM && newY >= 0 && screenSize.y >= newY + buttonLayoutParams.height) {
+                            if (buttonPosition != BUTTON_POSITION_BOTTOM
+                                    && newY >= 0
+                                    && screenSize.y >= newY + buttonLayoutParams.height) {
+
                                 buttonLayoutParams.y = newY;
                                 buttonLayoutParams.x = 0;
+
                             }
                             updateButtonLayout();
                         }
                         break;
                     case MotionEvent.ACTION_OUTSIDE:
-                        iconsAreUpToDate = false;
                         //TODO handle touches outside
                         break;
                 }
-                return false;
+                return true;
             }
         });
 
