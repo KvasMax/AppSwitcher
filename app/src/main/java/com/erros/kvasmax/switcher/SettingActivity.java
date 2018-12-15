@@ -38,7 +38,6 @@ import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 public class SettingActivity extends AppCompatActivity {
@@ -389,13 +388,13 @@ public class SettingActivity extends AppCompatActivity {
         darkeningBehindSwitch.setOnCheckedChangeListener((__, isChecked) -> sendParamWithCheck(SwitcherService.ACTION_APPS_DARKENING_BACKGROUND, isChecked ? 1 : 0));
         startOnBoot.setOnCheckedChangeListener((__, isChecked) -> settingsManager.saveStartingOnBoot(isChecked));
         blacklistButton.setOnClickListener(__ -> {
-            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
+            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
             ((BaseAdapter) blacklistView.getAdapter()).notifyDataSetChanged();
             blacklistDialog.show();
         });
         blacklistDialog.setOnCancelListener(__ -> {
             settingsManager.saveBlacklist(blacklist);
-            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 0);
+            sendParamWithCheck(SwitcherService.ACTION_APPS_VISIBILITY, 1);
             sendParamWithCheck(SwitcherService.ACTION_UPDATE_BLACKLIST, 0);
         });
         blacklistView.setOnItemClickListener((__, view, i, l) -> {
@@ -530,9 +529,6 @@ public class SettingActivity extends AppCompatActivity {
     private void loadBlacklist() {
         appList = Utils.getApps(getPackageManager());
         Arrays.sort(appList, (first, second) -> first.getName().compareTo(second.getName()));
-        if (settingsManager.getBlacklist() == null) {
-            settingsManager.saveBlacklist(new HashSet<>(appList.length / 2));
-        }
         blacklist = settingsManager.getBlacklist();
 
     }

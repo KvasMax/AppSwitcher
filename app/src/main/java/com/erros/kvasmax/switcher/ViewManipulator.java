@@ -448,9 +448,11 @@ public class ViewManipulator {
                                         @Override
                                         public void onAnimationStart(Animator animation) {
                                         }
+
                                         @Override
                                         public void onAnimationCancel(Animator animation) {
                                         }
+
                                         @Override
                                         public void onAnimationRepeat(Animator animation) {
                                         }

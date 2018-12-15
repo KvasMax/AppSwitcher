@@ -50,12 +50,11 @@ public class AppContainer {
         return this.recentApps.get(position);
     }
 
-    public Drawable[] getIcons(PackageManager pm) {
+    public Drawable[] getIcons(PackageManager packageManager) {
         Drawable[] icons = new Drawable[recentApps.size()];
         int recentAppsCount = recentApps.size();
         for (int index = 0; index < recentAppsCount; index++) {
-            icons[index] = recentApps.get(index).getIcon(pm);
-
+            icons[index] = recentApps.get(index).getIcon(packageManager);
         }
         return icons;
     }

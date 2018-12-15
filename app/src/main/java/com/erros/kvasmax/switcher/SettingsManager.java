@@ -3,8 +3,10 @@ package com.erros.kvasmax.switcher;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -36,7 +38,7 @@ public class SettingsManager {
     private int defaultAppBarColor;
 
     public void clear() {
-        editor.clear().apply();
+        editor.clear().commit();
     }
 
     public boolean isFirstAppLaunch() {
@@ -47,13 +49,14 @@ public class SettingsManager {
         return !settings.contains(APP_PREFERENCES_APP_X_DISTANCE);
     }
 
-    public Set<String> getBlacklist() {
-        return settings.getStringSet(APP_PREFERENCES_COMMON_BLACKLIST, null);
+    public @NonNull
+    Set<String> getBlacklist() {
+        return new HashSet<>(settings.getStringSet(APP_PREFERENCES_COMMON_BLACKLIST, new HashSet<>()));
     }
 
     public void saveBlacklist(Set<String> blacklist) {
         editor.putStringSet(APP_PREFERENCES_COMMON_BLACKLIST, blacklist);
-        editor.apply();
+        editor.commit();
     }
 
     private SettingsManager(Context context) {
@@ -72,7 +75,7 @@ public class SettingsManager {
     }
 
     public void saveButtonColor(int color) {
-        editor.putInt(APP_PREFERENCES_BUTTON_COLOR, color).apply();
+        editor.putInt(APP_PREFERENCES_BUTTON_COLOR, color).commit();
     }
 
     public int getAppBarDefaultColor() {
@@ -89,7 +92,7 @@ public class SettingsManager {
 
     public void saveButtonThickness(int value) {
         editor.putInt(APP_PREFERENCES_BUTTON_THICKNESS, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getButtonLength() {
@@ -98,7 +101,7 @@ public class SettingsManager {
 
     public void saveButtonLength(int value) {
         editor.putInt(APP_PREFERENCES_BUTTON_LENGTH, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getButtonPosition() {
@@ -107,7 +110,7 @@ public class SettingsManager {
 
     public void saveButtonPosition(int value) {
         editor.putInt(APP_PREFERENCES_BUTTON_POSITION, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getAppCount() {
@@ -116,7 +119,7 @@ public class SettingsManager {
 
     public void saveAppCount(int value) {
         editor.putInt(APP_PREFERENCES_APP_COUNT, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getAppIconSize() {
@@ -125,7 +128,7 @@ public class SettingsManager {
 
     public void saveAppIconSize(int value) {
         editor.putInt(APP_PREFERENCES_APP_ICON_SIZE, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getAppOrder() {
@@ -134,7 +137,7 @@ public class SettingsManager {
 
     public void saveAppOrder(int value) {
         editor.putInt(APP_PREFERENCES_APP_ORDER, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getAppLayout() {
@@ -143,7 +146,7 @@ public class SettingsManager {
 
     public void saveAppLayout(int value) {
         editor.putInt(APP_PREFERENCES_APP_LAYOUT, value);
-        editor.apply();
+        editor.commit();
     }
 
     public int getAppBarAnimation() {
@@ -152,7 +155,7 @@ public class SettingsManager {
 
     public void saveAppBarAnimation(int value) {
         editor.putInt(APP_PREFERENCES_APP_ANIM, value);
-        editor.apply();
+        editor.commit();
     }
 
     public boolean isAnimatingSwitching() {
@@ -161,7 +164,7 @@ public class SettingsManager {
 
     public void saveAnimatingSwitching(boolean value) {
         editor.putBoolean(APP_PREFERENCES_APP_USE_ANIMATION, value);
-        editor.apply();
+        editor.commit();
     }
 
     public boolean isVibratingOnSwitch() {
@@ -170,7 +173,7 @@ public class SettingsManager {
 
     public void saveVibratingOnSwitch(boolean value) {
         editor.putBoolean(APP_PREFERENCES_APP_USE_VIBRATION, value);
-        editor.apply();
+        editor.commit();
     }
 
     public boolean isAvoidingKeyboard() {
@@ -179,7 +182,7 @@ public class SettingsManager {
 
     public void saveAvoidingKeyboard(boolean value) {
         editor.putBoolean(APP_PREFERENCES_BUTTON_AVOID_KEYBOARD, value);
-        editor.apply();
+        editor.commit();
     }
 
     public boolean isStartingOnBoot() {
@@ -192,7 +195,7 @@ public class SettingsManager {
         } else {
             editor.remove(APP_PREFERENCES_COMMON_START_ON_BOOT);
         }
-        editor.apply();
+        editor.commit();
     }
 
     public boolean containsCoordinates() {
@@ -205,7 +208,7 @@ public class SettingsManager {
 
     public void saveDragableFloatingButton(boolean value) {
         editor.putBoolean(APP_PREFERENCES_BUTTON_DRAG, value);
-        editor.apply();
+        editor.commit();
     }
 
     public boolean isDragableAppBar() {
@@ -214,7 +217,7 @@ public class SettingsManager {
 
     public void saveDragableAppBar(boolean value) {
         editor.putBoolean(APP_PREFERENCES_APP_DRAG, value);
-        editor.apply();
+        editor.commit();
     }
 
     public Point getButtonPortraitCoordinates() {
@@ -227,7 +230,7 @@ public class SettingsManager {
     public void saveButtonPortraitCoordinates(Point point) {
         editor.putInt(APP_PREFERENCES_BUTTON_X_PORTRAIT, point.x);
         editor.putInt(APP_PREFERENCES_BUTTON_Y_PORTRAIT, point.y);
-        editor.apply();
+        editor.commit();
     }
 
     public Point getButtonLandscapeCoordinates() {
@@ -240,7 +243,7 @@ public class SettingsManager {
     public void saveButtonLandscapeCoordinates(Point point) {
         editor.putInt(APP_PREFERENCES_BUTTON_X_LANDSCAPE, point.x);
         editor.putInt(APP_PREFERENCES_BUTTON_Y_LANDSCAPE, point.y);
-        editor.apply();
+        editor.commit();
     }
 
     public Point getAppBarDistance() {
@@ -253,7 +256,7 @@ public class SettingsManager {
     public void saveAppBarDistance(Point point) {
         editor.putInt(APP_PREFERENCES_APP_X_DISTANCE, point.x);
         editor.putInt(APP_PREFERENCES_APP_Y_DISTANCE, point.y);
-        editor.apply();
+        editor.commit();
     }
 
     private final String APP_PREFERENCES_APP_USE_DARKENING_BEHIND = "APP_PREFERENCES_APP_USE_DARKENING_BEHIND";
@@ -287,12 +290,12 @@ public class SettingsManager {
     private final String APP_PREFERENCES_APP_USE_VIBRATION = "APP_PREFERENCES_APP_USE_VIBRATION";
 
     public void saveAppBarColor(int color) {
-        editor.putInt(APP_PREFERENCES_APP_BAR_COLOR, color).apply();
+        editor.putInt(APP_PREFERENCES_APP_BAR_COLOR, color).commit();
     }
 
 
     public void saveDarkeningBehind(boolean enabled) {
-        editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).apply();
+        editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).commit();
     }
 
     private final String APP_PREFERENCES_COMMON_START_ON_BOOT = "APP_PREFERENCES_COMMON_START_ON_BOOT";
