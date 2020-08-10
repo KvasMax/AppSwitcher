@@ -38,6 +38,7 @@ import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public class SettingActivity extends AppCompatActivity {
@@ -80,8 +81,8 @@ public class SettingActivity extends AppCompatActivity {
 
     private AlertDialog colorPickerDialog;
 
-    Set<String> blacklist;
-    AppInfo[] appList;
+    Set<String> blacklist = new HashSet<>();
+    AppInfo[] appList = {};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,14 +147,7 @@ public class SettingActivity extends AppCompatActivity {
         findViews();
         setAdapters();
 
-        try {
-            loadSettings();
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-            settingsManager.clear();
-            finish();
-            startActivity(new Intent(getApplicationContext(), SettingActivity.class));
-        }
+        loadSettings();
 
         setListeners();
 
@@ -524,6 +518,7 @@ public class SettingActivity extends AppCompatActivity {
         darkeningBehindSwitch.setChecked(settingsManager.shouldUseDarkeningBehind());
 
         loadBlacklist();
+
     }
 
     private void loadBlacklist() {

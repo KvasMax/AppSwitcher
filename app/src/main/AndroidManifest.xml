@@ -17,22 +17,30 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme">
-        <activity
-            android:name=".SettingActivity"
-            android:label="@string/app_name">
+        android:theme="@style/AppTheme"
+        >
+        <activity android:name=".SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".SorryForCrashActivity" />
+        <activity
+            android:name=".SettingActivity"
+            android:label="@string/app_name"
+            >
+
+        </activity>
 
         <service
             android:name=".SwitcherService"
-            android:exported="false" />
+            android:exported="false"
+            />
         <service
             android:name=".KamikadzeService"
-            android:exported="false" />
+            android:exported="false"
+            />
 
         <receiver
             android:name=".StartOnBootReceiver"

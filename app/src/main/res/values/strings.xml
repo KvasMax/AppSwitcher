@@ -1,10 +1,5 @@
 <resources>
     <string name="app_name">One swipe to switch</string>
-    <string name="unit_id">ca-app-pub-5616229813369025~2393725405</string>
-    <string name="ad_fullscreen">ca-app-pub-5616229813369025/5543467076</string>
-    <string name="ad_native1">ca-app-pub-5616229813369025/2657626899</string>
-    <string name="ad_native2">ca-app-pub-5616229813369025/4027506745</string>
-    <string name="ad_banner1">ca-app-pub-5616229813369025/4194371169</string>
     <string name="common">Common</string>
     <string name="blacklist">App blacklist</string>
     <string name="start_on_boot">Start on boot</string>
@@ -61,4 +56,5 @@
     <string name="app_appear_animation">Appearance animation of app list</string>
     <string name="how_to_use">How to use</string>
     <string name="how_to_use_explanation">You have a floating button and an app bar. To get the app bar to appear you need to touch the floating button and then swipe your finger. To switch between apps you need to get the app bar to appear then move your finger to any app icon of the app bar and take you finger off the screen.</string>
+    <string name="sorry_for_crash">An unexpected error occurred during the previous run. Information about it is transferred to the developer. The issue will be fixed as soon as possible.</string>
 </resources>

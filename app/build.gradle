@@ -24,8 +24,8 @@ android {
         applicationId "com.erros.kvasmax.switcher"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 14
-        versionName "1.5.1"
+        versionCode 15
+        versionName "1.5.2"
         resConfigs "en", "ru"
     }
     buildTypes {
@@ -55,4 +55,5 @@ dependencies {
     implementation 'com.android.support:design:28.0.0'
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.github.QuadFlask:colorpicker:0.0.13'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }

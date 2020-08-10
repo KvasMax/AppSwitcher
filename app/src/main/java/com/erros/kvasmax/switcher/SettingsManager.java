@@ -33,7 +33,6 @@ public class SettingsManager {
     private SharedPreferences settings;
     private SharedPreferences.Editor editor;
 
-    private final String APP_PREFERENCES_APP_BAR_COLOR = "APP_PREFERENCES_APP_BAR_COLOR";
     private int defaultButtonColor;
     private int defaultAppBarColor;
 
@@ -265,6 +264,17 @@ public class SettingsManager {
         return settings.getBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, false);
     }
 
+    private final String APP_PREFERENCES_APP_BAR_COLOR = "APP_PREFERENCES_APP_BAR_COLOR";
+    private final String APP_PREFERENCES_COMMON_APP_WAS_CRASHED = "APP_PREFERENCES_COMMON_APP_WAS_CRASHED";
+
+    public void saveAppBarColor(int color) {
+        editor.putInt(APP_PREFERENCES_APP_BAR_COLOR, color).commit();
+    }
+
+    public void saveDarkeningBehind(boolean enabled) {
+        editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).commit();
+    }
+
     private final String APP_PREFERENCES = "APP_PREFERENCES";
 
     private final String APP_PREFERENCES_BUTTON_DRAG = "APP_PREFERENCES_BUTTON_DRAG";
@@ -289,15 +299,14 @@ public class SettingsManager {
     private final String APP_PREFERENCES_APP_USE_ANIMATION = "APP_PREFERENCES_APP_USE_ANIMATION";
     private final String APP_PREFERENCES_APP_USE_VIBRATION = "APP_PREFERENCES_APP_USE_VIBRATION";
 
-    public void saveAppBarColor(int color) {
-        editor.putInt(APP_PREFERENCES_APP_BAR_COLOR, color).commit();
-    }
-
-
-    public void saveDarkeningBehind(boolean enabled) {
-        editor.putBoolean(APP_PREFERENCES_APP_USE_DARKENING_BEHIND, enabled).commit();
+    public void setAppWasCrashed(boolean crashed) {
+        editor.putBoolean(APP_PREFERENCES_COMMON_APP_WAS_CRASHED, crashed).commit();
     }
 
     private final String APP_PREFERENCES_COMMON_START_ON_BOOT = "APP_PREFERENCES_COMMON_START_ON_BOOT";
     private final String APP_PREFERENCES_COMMON_BLACKLIST = "APP_PREFERENCES_COMMON_BLACKLIST";
+
+    public boolean wasAppCrashed() {
+        return settings.getBoolean(APP_PREFERENCES_COMMON_APP_WAS_CRASHED, false);
+    }
 }

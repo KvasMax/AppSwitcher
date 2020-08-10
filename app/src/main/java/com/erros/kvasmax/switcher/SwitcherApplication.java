@@ -17,12 +17,17 @@ public class SwitcherApplication extends Application {
     public void onCreate() {
         super.onCreate();
         if (BuildConfig.DEBUG) {
-            StrictMode.VmPolicy policy = new StrictMode.VmPolicy.Builder()
+            final StrictMode.VmPolicy policy = new StrictMode.VmPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
                     .build();
             StrictMode.setVmPolicy(policy);
         }
+        final Thread.UncaughtExceptionHandler exceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            SettingsManager.getInstance(SwitcherApplication.this).setAppWasCrashed(true);
+            exceptionHandler.uncaughtException(thread, throwable);
+        });
     }
 
 }
